@@ -86,9 +86,9 @@ def fetch_exchange_rates() -> dict:
 def fetch_gold_price() -> Optional[dict]:
     """
     抓取黃金存摺牌價。
-    台銀黃金頁面結構特殊：
-      列2 cells[2] = "4,587買進"  → 取數字部分 = 銀行賣出價（你買入的價格）
-      列3 cells[2] = "4,533回售"  → 取數字部分 = 銀行買進價（你賣出的價格）
+    台銀頁面結構：
+      列2 cells[2] = "4,587買進"  → 銀行賣出價（你買入的價格）
+      列3 cells[2] = "4,533回售"  → 銀行買進價（你賣出的價格）
     """
     url = "https://rate.bot.com.tw/gold?Lang=zh-TW"
     soup = _fetch_page(url)
@@ -105,27 +105,21 @@ def fetch_gold_price() -> Optional[dict]:
 
         rows = [r for r in table.find_all("tr") if r.find_all("td")]
 
-        # 取出所有 td 的文字，過濾出純數字（去除逗號後可轉 float）
-        prices = []
-        for row in rows:
-            for cell in row.find_all("td"):
-                text = cell.get_text(strip=True).replace(",", "")
-                # 取開頭的數字部分（例如 "4587買進" → "4587"）
-                digits = ""
-                for ch in text:
-                    if ch.isdigit() or ch == ".":
-                        digits += ch
-                    elif digits:
-                        break
-                if digits:
-                    try:
-                        prices.append(float(digits))
-                    except ValueError:
-                        pass
+        def extract_number(text: str) -> Optional[float]:
+            """從 '4,587買進' 這類字串取出數字部分。"""
+            digits = text.replace(",", "")
+            result = ""
+            for ch in digits:
+                if ch.isdigit() or ch == ".":
+                    result += ch
+                elif result:
+                    break
+            return float(result) if result else None
 
-        if len(prices) >= 2:
-            sell = prices[0]  # 銀行賣出（你買入）
-            buy  = prices[1]  # 銀行買進（你賣出）
+        sell = extract_number(rows[0].find_all("td")[2].get_text(strip=True))  # 銀行賣出
+        buy  = extract_number(rows[1].find_all("td")[2].get_text(strip=True))  # 銀行買進
+
+        if sell and buy:
             print(f"  [GOLD] 買:{buy}  賣:{sell}")
             return {
                 "currency": "GOLD",
@@ -134,12 +128,13 @@ def fetch_gold_price() -> Optional[dict]:
                 "time": now_str
             }
         else:
-            print(f"[Scraper] 黃金價格解析不足，取得：{prices}")
+            print(f"[Scraper] 黃金價格解析失敗：sell={sell} buy={buy}")
 
     except Exception as e:
         print(f"[Scraper] 黃金解析失敗：{e}")
 
     return None
+
 
 def fetch_all() -> dict:
     """一次抓取所有追蹤標的（USD、JPY、黃金）。"""
