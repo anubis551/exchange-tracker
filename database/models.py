@@ -177,7 +177,7 @@ def init_db():
 
 
 def get_db():
-    """Flask route 用的 session 產生器。"""
+    """Flask route 用的 session 產生器（用完自動關閉）。"""
     db = SessionLocal()
     try:
         yield db
