@@ -86,13 +86,6 @@ def fetch_exchange_rates() -> dict:
 def fetch_gold_price() -> Optional[dict]:
     """
     抓取黃金存摺牌價。
-    回傳格式：
-    {
-      "currency": "GOLD",
-      "buy": 3150.0,
-      "sell": 3200.0,
-      "time": "..."
-    }
     """
     url = "https://rate.bot.com.tw/gold?Lang=zh-TW"
     soup = _fetch_page(url)
@@ -109,7 +102,13 @@ def fetch_gold_price() -> Optional[dict]:
 
         for row in table.find_all("tr"):
             cells = row.find_all("td")
-            if len(cells) >= 3 and "黃金存摺" in cells[0].get_text():
+            if len(cells) < 3:
+                continue
+            # 跳過標題列，只處理有數字的列
+            text = cells[0].get_text(strip=True)
+            if "黃金存摺" not in text:
+                continue
+            try:
                 buy  = float(cells[1].get_text(strip=True).replace(",", ""))
                 sell = float(cells[2].get_text(strip=True).replace(",", ""))
                 return {
@@ -118,6 +117,8 @@ def fetch_gold_price() -> Optional[dict]:
                     "sell": sell,
                     "time": now_str
                 }
+            except ValueError:
+                continue
 
     except Exception as e:
         print(f"[Scraper] 黃金解析失敗：{e}")
