@@ -23,8 +23,8 @@ from database.stock_crud import (
       delete_stock_record, get_stock_alert_setting,
       update_stock_alert_setting,
   )
-  from scraper.stock_scraper import fetch_all_stocks
-  from logic.stock_alert_engine import run_all_stock_checks
+from scraper.stock_scraper import fetch_all_stocks
+from logic.stock_alert_engine import run_all_stock_checks
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
