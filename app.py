@@ -7,6 +7,7 @@ Flask 主應用程式。
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template
 from apscheduler.schedulers.background import BackgroundScheduler
+
 from config import config
 from database.models import init_db, SessionLocal
 from database import crud
@@ -24,6 +25,15 @@ from database.stock_crud import (
 )
 from scraper.stock_scraper import fetch_all_stocks
 from logic.stock_alert_engine import run_all_stock_checks
+
+app = Flask(__name__)
+app.secret_key = config.SECRET_KEY
+
+# ── 初始化 ──────────────────────────────────────────
+init_db()
+init_stock_db()
+line_notifier  = LineNotifier()
+email_notifier = EmailNotifier()
 
 
 # ════════════════════════════════════════════════════
@@ -74,6 +84,16 @@ def scheduled_fetch_and_alert():
         db.close()
 
 
+scheduler = BackgroundScheduler(timezone="Asia/Taipei")
+scheduler.add_job(
+    scheduled_fetch_and_alert,
+    "interval",
+    minutes=config.FETCH_INTERVAL_MINUTES,
+    next_run_time=datetime.now()
+)
+scheduler.start()
+
+
 # ════════════════════════════════════════════════════
 #  API Routes — 匯率資料
 # ════════════════════════════════════════════════════
@@ -88,7 +108,7 @@ def api_latest_rates():
             rate = crud.get_latest_rate(db, currency)
             if rate:
                 result[currency] = {
-                    "buy": rate.buy_rate,
+                    "buy":  rate.buy_rate,
                     "sell": rate.sell_rate,
                     "time": rate.recorded_at.strftime("%Y-%m-%d %H:%M")
                 }
@@ -107,7 +127,7 @@ def api_rate_history(currency: str):
         data = [
             {
                 "time": r.recorded_at.strftime("%Y-%m-%d %H:%M"),
-                "buy": r.buy_rate,
+                "buy":  r.buy_rate,
                 "sell": r.sell_rate
             }
             for r in history
@@ -132,13 +152,13 @@ def api_get_records():
         )
         return jsonify([
             {
-                "id": r.id,
-                "currency": r.currency,
-                "twd_amount": r.twd_amount,
+                "id":             r.id,
+                "currency":       r.currency,
+                "twd_amount":     r.twd_amount,
                 "foreign_amount": r.foreign_amount,
-                "rate_used": r.rate_used,
-                "exchanged_at": r.exchanged_at.strftime("%Y-%m-%d"),
-                "note": r.note or ""
+                "rate_used":      r.rate_used,
+                "exchanged_at":   r.exchanged_at.strftime("%Y-%m-%d"),
+                "note":           r.note or ""
             }
             for r in records
         ])
@@ -148,18 +168,7 @@ def api_get_records():
 
 @app.route("/api/records", methods=["POST"])
 def api_add_record():
-    """
-    新增換匯記錄。
-    Body（JSON）：
-    {
-      "currency": "USD",
-      "twd_amount": 50000,
-      "foreign_amount": 1570.5,
-      "rate_used": 31.83,
-      "exchanged_at": "2026-05-26",
-      "note": "第一次換匯"
-    }
-    """
+    """新增換匯記錄。"""
     data = request.json
     required = ["currency", "twd_amount", "foreign_amount", "rate_used", "exchanged_at"]
     for field in required:
@@ -214,7 +223,7 @@ def api_holdings():
 
 
 # ════════════════════════════════════════════════════
-#  API Routes — 通知設定
+#  API Routes — 通知設定（匯率）
 # ════════════════════════════════════════════════════
 
 @app.route("/api/alerts/<currency>", methods=["GET"])
@@ -226,10 +235,10 @@ def api_get_alert(currency: str):
         if not s:
             return jsonify({"error": "找不到設定"}), 404
         return jsonify({
-            "currency": s.currency,
-            "target_rate": s.target_rate,
-            "alert_3m_low": s.alert_3m_low,
-            "alert_6m_low": s.alert_6m_low,
+            "currency":        s.currency,
+            "target_rate":     s.target_rate,
+            "alert_3m_low":    s.alert_3m_low,
+            "alert_6m_low":    s.alert_6m_low,
             "alert_below_avg": s.alert_below_avg
         })
     finally:
@@ -238,10 +247,7 @@ def api_get_alert(currency: str):
 
 @app.route("/api/alerts/<currency>", methods=["PATCH"])
 def api_update_alert(currency: str):
-    """
-    更新通知設定。
-    Body 範例：{"target_rate": 30.5, "alert_6m_low": true}
-    """
+    """更新匯率通知設定。"""
     data = request.json
     db = SessionLocal()
     try:
@@ -263,14 +269,14 @@ def api_update_alert(currency: str):
 # ════════════════════════════════════════════════════
 #  API Routes — 股票即時價格
 # ════════════════════════════════════════════════════
- 
+
 @app.route("/api/stocks/latest")
 def api_latest_stocks():
     """取得所有追蹤標的最新價格。"""
     db = SessionLocal()
     try:
         result = {}
-        for symbol in ["VOO", "0050", "00919"]:
+        for symbol in config.TRACKED_STOCKS:
             price = get_latest_stock_price(db, symbol)
             if price:
                 result[symbol] = {
@@ -284,8 +290,8 @@ def api_latest_stocks():
         return jsonify(result)
     finally:
         db.close()
- 
- 
+
+
 @app.route("/api/stocks/history/<symbol>")
 def api_stock_history(symbol: str):
     """取得某標的歷史走勢（預設 90 天，可帶 ?days=180）。"""
@@ -304,12 +310,12 @@ def api_stock_history(symbol: str):
         return jsonify(data)
     finally:
         db.close()
- 
- 
+
+
 # ════════════════════════════════════════════════════
 #  API Routes — 持股記錄
 # ════════════════════════════════════════════════════
- 
+
 @app.route("/api/stocks/records", methods=["GET"])
 def api_get_stock_records():
     """取得持股記錄（可帶 ?symbol=VOO 篩選）。"""
@@ -321,47 +327,35 @@ def api_get_stock_records():
         )
         return jsonify([
             {
-                "id":               r.id,
-                "symbol":           r.symbol,
-                "shares":           r.shares,
-                "price_per_share":  r.price_per_share,
-                "total_cost":       r.total_cost,
-                "currency":         r.currency,
-                "purchased_at":     r.purchased_at.strftime("%Y-%m-%d"),
-                "note":             r.note or "",
+                "id":              r.id,
+                "symbol":          r.symbol,
+                "shares":          r.shares,
+                "price_per_share": r.price_per_share,
+                "total_cost":      r.total_cost,
+                "currency":        r.currency,
+                "purchased_at":    r.purchased_at.strftime("%Y-%m-%d"),
+                "note":            r.note or "",
             }
             for r in records
         ])
     finally:
         db.close()
- 
- 
+
+
 @app.route("/api/stocks/records", methods=["POST"])
 def api_add_stock_record():
-    """
-    新增持股記錄。
-    Body（JSON）：
-    {
-      "symbol":          "VOO",
-      "shares":          10,
-      "price_per_share": 520.5,
-      "total_cost":      5205,
-      "currency":        "USD",
-      "purchased_at":    "2026-05-27",
-      "note":            "第一次買入"
-    }
-    """
+    """新增持股記錄。"""
     data = request.json
     required = ["symbol", "shares", "price_per_share", "total_cost", "currency", "purchased_at"]
     for field in required:
         if field not in data:
             return jsonify({"error": f"缺少欄位：{field}"}), 400
- 
+
     try:
         purchased_at = datetime.strptime(data["purchased_at"], "%Y-%m-%d")
     except ValueError:
         return jsonify({"error": "日期格式錯誤，請用 YYYY-MM-DD"}), 400
- 
+
     db = SessionLocal()
     try:
         record = add_stock_record(
@@ -377,8 +371,8 @@ def api_add_stock_record():
         return jsonify({"success": True, "id": record.id}), 201
     finally:
         db.close()
- 
- 
+
+
 @app.route("/api/stocks/records/<int:record_id>", methods=["DELETE"])
 def api_delete_stock_record(record_id: int):
     """刪除持股記錄。"""
@@ -390,25 +384,25 @@ def api_delete_stock_record(record_id: int):
         return jsonify({"error": "找不到該記錄"}), 404
     finally:
         db.close()
- 
- 
+
+
 @app.route("/api/stocks/holdings")
 def api_stock_holdings():
     """取得各標的持股總覽（含加權平均成本）。"""
     db = SessionLocal()
     try:
         result = {}
-        for symbol in ["VOO", "0050", "00919"]:
+        for symbol in config.TRACKED_STOCKS:
             result[symbol] = get_stock_holdings_summary(db, symbol)
         return jsonify(result)
     finally:
         db.close()
- 
- 
+
+
 # ════════════════════════════════════════════════════
 #  API Routes — 股票通知設定
 # ════════════════════════════════════════════════════
- 
+
 @app.route("/api/stocks/alerts/<symbol>", methods=["GET"])
 def api_get_stock_alert(symbol: str):
     """取得某標的的通知設定。"""
@@ -427,14 +421,11 @@ def api_get_stock_alert(symbol: str):
         })
     finally:
         db.close()
- 
- 
+
+
 @app.route("/api/stocks/alerts/<symbol>", methods=["PATCH"])
 def api_update_stock_alert(symbol: str):
-    """
-    更新股票通知設定。
-    Body 範例：{"target_price": 500.0, "alert_3d_drop": true}
-    """
+    """更新股票通知設定。"""
     data = request.json
     db = SessionLocal()
     try:
