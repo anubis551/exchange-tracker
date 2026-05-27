@@ -7,7 +7,6 @@ Flask 主應用程式。
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template
 from apscheduler.schedulers.background import BackgroundScheduler
-
 from config import config
 from database.models import init_db, SessionLocal
 from database import crud
@@ -17,23 +16,14 @@ from notifier.line_bot import LineNotifier
 from notifier.email_notify import EmailNotifier
 from database.stock_models import init_stock_db
 from database.stock_crud import (
-      save_stock_price, get_latest_stock_price,
-      get_stock_price_history, add_stock_record,
-      get_all_stock_records, get_stock_holdings_summary,
-      delete_stock_record, get_stock_alert_setting,
-      update_stock_alert_setting,
-  )
+    save_stock_price, get_latest_stock_price,
+    get_stock_price_history, add_stock_record,
+    get_all_stock_records, get_stock_holdings_summary,
+    delete_stock_record, get_stock_alert_setting,
+    update_stock_alert_setting,
+)
 from scraper.stock_scraper import fetch_all_stocks
 from logic.stock_alert_engine import run_all_stock_checks
-
-app = Flask(__name__)
-app.secret_key = config.SECRET_KEY
-
-# ── 初始化 ──────────────────────────────────────────
-init_db()
-init_stock_db()
-line_notifier  = LineNotifier()
-email_notifier = EmailNotifier()
 
 
 # ════════════════════════════════════════════════════
