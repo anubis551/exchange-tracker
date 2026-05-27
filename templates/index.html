@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>匯率追蹤</title>
+<title>個人財務追蹤</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -12,14 +12,19 @@
     --surface:   #111118;
     --surface2:  #1a1a24;
     --border:    #2a2a3a;
-    --accent:    #ffd166;
-    --accent2:   #ff6b35;
-    --accent3:   #00d4ff;
     --text:      #e8e8f0;
     --muted:     #666680;
+    --gold:      #ffd166;
+    --accent2:   #ff6b35;
     --usd:       #c8ff00;
     --jpy:       #ff6b35;
-    --gold:      #ffd166;
+    /* 股票配色 */
+    --voo:       #00d4ff;
+    --s0050:     #b48eff;
+    --s00919:    #ff8fab;
+    /* 漲跌 */
+    --up:        #4ade80;
+    --down:      #f87171;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,8 +42,8 @@
     position: fixed;
     inset: 0;
     background-image:
-      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(255,209,102,0.04) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,212,255,0.03) 0%, transparent 60%);
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,212,255,0.03) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,209,102,0.03) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
@@ -53,9 +58,8 @@
 
   /* ── Header ── */
   header {
-    padding: 32px 0 24px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 32px;
+    padding: 28px 0 0;
+    margin-bottom: 0;
   }
 
   .header-inner {
@@ -63,220 +67,235 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 16px;
+    padding-bottom: 20px;
   }
 
   .logo {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.25em;
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 4px;
   }
 
   h1 {
-    font-size: clamp(28px, 4vw, 42px);
+    font-size: clamp(24px, 3.5vw, 38px);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.02em;
-    color: var(--gold);
+    color: var(--text);
   }
 
-  h1 span { color: var(--gold); }
+  h1 em { color: var(--gold); font-style: normal; }
 
   .last-update {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     color: var(--muted);
     text-align: right;
+    line-height: 1.6;
   }
 
   .update-dot {
     display: inline-block;
-    width: 6px; height: 6px;
+    width: 5px; height: 5px;
     border-radius: 50%;
-    background: var(--gold);
-    margin-right: 6px;
+    background: var(--up);
+    margin-right: 5px;
     animation: pulse 2s infinite;
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── 主頁籤導覽 ── */
+  .main-nav {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 28px;
   }
 
-  /* ── 即時匯率卡片 ── */
-  .rates-grid {
+  .nav-tab {
+    flex: 1;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .nav-tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .nav-tab.active.tab-stock { color: var(--voo); }
+  .nav-tab.active.tab-fx    { color: var(--gold); }
+
+  /* ── 頁面切換 ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Section Title ── */
+  .section-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* ── 卡片網格（3欄）── */
+  .cards-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 32px;
+    gap: 14px;
+    margin-bottom: 28px;
   }
 
-  .rate-card {
+  /* ── 股票報價卡片 ── */
+  .stock-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px;
+    padding: 20px 22px;
     position: relative;
     overflow: hidden;
     transition: transform 0.2s;
   }
 
-  .rate-card:hover { transform: translateY(-2px); }
+  .stock-card:hover { transform: translateY(-2px); }
+  .stock-card.voo   { border-top: 2px solid var(--voo); }
+  .stock-card.s0050  { border-top: 2px solid var(--s0050); }
+  .stock-card.s00919 { border-top: 2px solid var(--s00919); }
 
-  .rate-card.usd  { border-top: 2px solid var(--usd); }
-  .rate-card.jpy  { border-top: 2px solid var(--jpy); }
-  .rate-card.gold { border-top: 2px solid var(--gold); }
-
-  .rate-card::after {
+  .stock-card::after {
     content: '';
     position: absolute;
-    top: 0; right: 0;
+    top: -20px; right: -20px;
     width: 80px; height: 80px;
     border-radius: 50%;
-    opacity: 0.05;
-    filter: blur(20px);
+    opacity: 0.06;
+    filter: blur(18px);
   }
+  .stock-card.voo::after    { background: var(--voo); }
+  .stock-card.s0050::after  { background: var(--s0050); }
+  .stock-card.s00919::after { background: var(--s00919); }
 
-  .rate-card.usd::after  { background: var(--usd); }
-  .rate-card.jpy::after  { background: var(--jpy); }
-  .rate-card.gold::after { background: var(--gold); }
-
-  .rate-label {
-    font-size: 11px;
+  .stock-label {
+    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .rate-tag {
+  .stock-tag {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    padding: 2px 8px;
+    font-size: 9px;
+    padding: 2px 7px;
     border-radius: 4px;
-    font-weight: 400;
-    letter-spacing: 0.05em;
   }
+  .voo   .stock-tag { background: rgba(0,212,255,0.12);   color: var(--voo); }
+  .s0050  .stock-tag { background: rgba(180,142,255,0.12); color: var(--s0050); }
+  .s00919 .stock-tag { background: rgba(255,143,171,0.12); color: var(--s00919); }
 
-  .usd  .rate-tag { background: rgba(200,255,0,0.1);   color: var(--usd); }
-  .jpy  .rate-tag { background: rgba(255,107,53,0.1);  color: var(--jpy); }
-  .gold .rate-tag { background: rgba(255,209,102,0.12); color: var(--gold); }
-
-  .rate-sell {
+  .stock-price {
     font-family: 'JetBrains Mono', monospace;
-    font-size: clamp(26px, 3vw, 36px);
+    font-size: clamp(22px, 2.5vw, 32px);
     font-weight: 500;
     letter-spacing: -0.02em;
     line-height: 1;
     margin-bottom: 8px;
   }
+  .voo   .stock-price { color: var(--voo); }
+  .s0050  .stock-price { color: var(--s0050); }
+  .s00919 .stock-price { color: var(--s00919); }
 
-  .usd  .rate-sell { color: var(--usd); }
-  .jpy  .rate-sell { color: var(--jpy); }
-  .gold .rate-sell { color: var(--gold); }
-
-  .rate-sub {
+  .stock-change {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
-    color: var(--muted);
-    display: flex;
-    gap: 16px;
+    font-weight: 500;
   }
+  .change-up   { color: var(--up); }
+  .change-down { color: var(--down); }
+  .change-flat { color: var(--muted); }
 
-  /* ── Section Title ── */
-  .section-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* ── 持有總覽 ── */
-  .holdings-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
+  /* ── 持有卡片 ── */
   .holding-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 20px 24px;
+    padding: 18px 22px;
   }
 
-  .holding-currency {
-    font-size: 11px;
+  .holding-symbol {
+    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .holding-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
   }
 
   .holding-key { font-size: 12px; color: var(--muted); }
-
-  .holding-val {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    color: var(--text);
-  }
+  .holding-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text); }
 
   .holding-avg {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: baseline;
   }
+  .avg-label { font-size: 10px; color: var(--muted); font-family: 'Syne', sans-serif; }
 
-  .avg-label { font-size: 11px; color: var(--muted); font-family: 'Syne', sans-serif; }
-
-  /* ── 主要內容區（圖表 2/3 + 表單 1/3）── */
+  /* ── 主要內容區 ── */
   .main-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 24px;
-    margin-bottom: 32px;
+    gap: 22px;
+    margin-bottom: 28px;
     align-items: start;
   }
 
-  /* ── 圖表區 ── */
+  /* ── 圖表卡 ── */
   .chart-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px;
+    padding: 22px;
     min-width: 0;
   }
 
@@ -284,44 +303,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
   .chart-tabs {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     background: var(--surface2);
-    padding: 4px;
+    padding: 3px;
     border-radius: 10px;
   }
 
   .chart-tab {
-    padding: 6px 14px;
+    padding: 5px 12px;
     border-radius: 7px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     cursor: pointer;
     border: none;
     background: transparent;
     color: var(--muted);
     transition: all 0.2s;
   }
+  .chart-tab.active                  { background: var(--surface); color: var(--text); }
+  .chart-tab.t-voo.active            { color: var(--voo); }
+  .chart-tab.t-0050.active           { color: var(--s0050); }
+  .chart-tab.t-00919.active          { color: var(--s00919); }
+  .chart-tab.t-usd.active            { color: var(--usd); }
+  .chart-tab.t-jpy.active            { color: var(--jpy); }
+  .chart-tab.t-gold.active           { color: var(--gold); }
 
-  .chart-tab.active { background: var(--surface); color: var(--text); }
-  .chart-tab.usd.active  { color: var(--usd); }
-  .chart-tab.jpy.active  { color: var(--jpy); }
-  .chart-tab.gold.active { color: var(--gold); }
-
-  /* 2. 天數切換按鈕改成黃金配色 */
-  .days-tabs { display: flex; gap: 4px; }
-
+  .days-tabs { display: flex; gap: 3px; }
   .days-tab {
-    padding: 4px 10px;
+    padding: 4px 9px;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: 10px;
     font-family: 'JetBrains Mono', monospace;
     cursor: pointer;
     border: 1px solid var(--border);
@@ -329,87 +348,54 @@
     color: var(--muted);
     transition: all 0.2s;
   }
+  .days-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(255,209,102,0.08); }
 
-  .days-tab.active {
-    border-color: var(--gold);
-    color: var(--gold);
-    background: rgba(255,209,102,0.08);
-  }
-
-  .chart-wrap {
-    position: relative;
-    height: 260px;
-  }
-
+  .chart-wrap { position: relative; height: 240px; }
   .chart-empty {
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     display: none;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    font-size: 13px;
+    align-items: center; justify-content: center;
+    color: var(--muted); font-size: 13px;
   }
 
-  /* ── 表單收合鈕 ── */
-  .form-toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 64px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    cursor: pointer;
-    color: var(--gold);
-    font-size: 14px;
-    transition: border-color 0.2s, background 0.2s;
-    align-self: center;
-    flex-shrink: 0;
-  }
-
-  .form-toggle-btn:hover {
-    border-color: var(--gold);
-    background: rgba(255,209,102,0.06);
-  }
-
-  /* ── 換匯輸入表單 ── */
+  /* ── 表單卡 ── */
   .form-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px;
+    padding: 22px;
     min-width: 0;
   }
 
-  /* 3. 表單標題改黃色 */
   .form-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
-    margin-bottom: 20px;
-    letter-spacing: 0.02em;
+    margin-bottom: 18px;
     color: var(--gold);
+    letter-spacing: 0.02em;
   }
 
-  .form-group { margin-bottom: 14px; }
+  .form-group { margin-bottom: 12px; }
 
   label {
     display: block;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 6px;
+    margin-bottom: 5px;
   }
 
-  select, input[type="text"], input[type="number"], input[type="date"] {
+  select,
+  input[type="text"],
+  input[type="number"],
+  input[type="date"] {
     width: 100%;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 9px 11px;
     color: var(--text);
     font-size: 13px;
     font-family: 'JetBrains Mono', monospace;
@@ -417,27 +403,19 @@
     transition: border-color 0.2s;
     -webkit-appearance: none;
   }
-
-  /* 5. 輸入框 focus 改黃色框 */
   select:focus, input:focus { border-color: var(--gold); }
-
   select option { background: var(--surface2); }
 
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 
-  /* 4. 記錄換匯按鈕改黃底深色文字 */
   .btn-submit {
     width: 100%;
-    padding: 12px;
+    padding: 11px;
     background: var(--gold);
     color: #1a1000;
     border: none;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     font-family: 'Syne', sans-serif;
     letter-spacing: 0.05em;
@@ -445,130 +423,126 @@
     margin-top: 4px;
     transition: opacity 0.2s, transform 0.1s;
   }
-
-  .btn-submit:hover  { opacity: 0.88; }
+  .btn-submit:hover  { opacity: 0.85; }
   .btn-submit:active { transform: scale(0.98); }
 
   .form-msg {
-    font-size: 12px;
-    margin-top: 10px;
+    font-size: 11px;
+    margin-top: 8px;
     text-align: center;
-    min-height: 18px;
+    min-height: 16px;
     font-family: 'JetBrains Mono', monospace;
   }
+  .form-msg.ok  { color: var(--up); }
+  .form-msg.err { color: var(--down); }
 
-  .form-msg.ok  { color: var(--gold); }
-  .form-msg.err { color: var(--accent2); }
-
-  /* ── 換匯記錄表格 ── */
+  /* ── 記錄表格卡 ── */
   .records-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 32px;
+    padding: 22px;
+    margin-bottom: 28px;
   }
 
   .records-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
   .filter-tabs {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     background: var(--surface2);
-    padding: 4px;
+    padding: 3px;
     border-radius: 10px;
   }
 
   .filter-tab {
-    padding: 5px 12px;
+    padding: 4px 10px;
     border-radius: 7px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     cursor: pointer;
     border: none;
     background: transparent;
     color: var(--muted);
     transition: all 0.2s;
   }
-
-  /* 7. 篩選標籤 active 配色對應各幣別 */
-  .filter-tab.active           { background: var(--surface); color: var(--text); }
-  .filter-tab.active.f-all     { color: var(--text); }
-  .filter-tab.active.f-usd     { color: var(--usd); }
-  .filter-tab.active.f-jpy     { color: var(--jpy); }
-  .filter-tab.active.f-gold    { color: var(--gold); }
+  .filter-tab.active              { background: var(--surface); }
+  .filter-tab.active.f-all        { color: var(--text); }
+  .filter-tab.active.f-voo        { color: var(--voo); }
+  .filter-tab.active.f-0050       { color: var(--s0050); }
+  .filter-tab.active.f-00919      { color: var(--s00919); }
+  .filter-tab.active.f-usd        { color: var(--usd); }
+  .filter-tab.active.f-jpy        { color: var(--jpy); }
+  .filter-tab.active.f-gold       { color: var(--gold); }
 
   table { width: 100%; border-collapse: collapse; }
-
   th {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--muted);
     text-align: left;
-    padding: 0 12px 12px 0;
+    padding: 0 10px 10px 0;
     border-bottom: 1px solid var(--border);
   }
-
   td {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    padding: 12px 12px 12px 0;
+    font-size: 12px;
+    padding: 11px 10px 11px 0;
     border-bottom: 1px solid rgba(42,42,58,0.5);
     vertical-align: middle;
   }
-
   tr:last-child td { border-bottom: none; }
 
-  .currency-badge {
+  .sym-badge {
     display: inline-block;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
   }
-
-  /* 7. 記錄表格幣別標籤配色與即時牌告一致 */
-  .badge-USD  { background: rgba(200,255,0,0.1);    color: var(--usd); }
-  .badge-JPY  { background: rgba(255,107,53,0.1);   color: var(--jpy); }
-  .badge-GOLD { background: rgba(255,209,102,0.12); color: var(--gold); }
+  .badge-VOO   { background: rgba(0,212,255,0.12);   color: var(--voo); }
+  .badge-0050  { background: rgba(180,142,255,0.12); color: var(--s0050); }
+  .badge-00919 { background: rgba(255,143,171,0.12); color: var(--s00919); }
+  .badge-USD   { background: rgba(200,255,0,0.1);    color: var(--usd); }
+  .badge-JPY   { background: rgba(255,107,53,0.1);   color: var(--jpy); }
+  .badge-GOLD  { background: rgba(255,209,102,0.12); color: var(--gold); }
 
   .btn-del {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--muted);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 11px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    font-size: 10px;
     cursor: pointer;
     transition: all 0.2s;
   }
-
-  .btn-del:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-del:hover { border-color: var(--down); color: var(--down); }
 
   .empty-row td {
     text-align: center;
     color: var(--muted);
-    padding: 32px 0;
+    padding: 28px 0;
     font-family: 'Syne', sans-serif;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   /* ── 通知設定 ── */
   .alerts-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 14px;
     margin-bottom: 48px;
   }
 
@@ -576,80 +550,82 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 20px 24px;
+    padding: 18px 20px;
   }
 
-  .alert-currency {
-    font-size: 11px;
+  .alert-symbol {
+    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .alert-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 9px;
   }
+  .alert-key { font-size: 11px; color: var(--text); }
 
-  .alert-key { font-size: 12px; color: var(--text); }
-
-  .toggle {
-    position: relative;
-    width: 36px; height: 20px;
-    cursor: pointer;
-  }
-
+  .toggle { position: relative; width: 34px; height: 19px; cursor: pointer; }
   .toggle input { display: none; }
-
-  .toggle-track {
-    position: absolute;
-    inset: 0;
-    background: var(--border);
-    border-radius: 10px;
-    transition: background 0.2s;
-  }
-
+  .toggle-track { position: absolute; inset: 0; background: var(--border); border-radius: 10px; transition: background 0.2s; }
   .toggle input:checked + .toggle-track { background: var(--gold); }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 13px; height: 13px; background: white; border-radius: 50%; transition: transform 0.2s; }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(15px); }
 
-  .toggle-thumb {
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 14px; height: 14px;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.2s;
-  }
-
-  .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
-
-  .target-input-wrap {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-  }
-
-  .target-row { display: flex; gap: 8px; align-items: center; }
-
-  .target-row input { flex: 1; padding: 8px 10px; font-size: 12px; }
+  .target-input-wrap { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .target-row { display: flex; gap: 7px; align-items: center; }
+  .target-row input { flex: 1; padding: 7px 9px; font-size: 11px; }
 
   .btn-save-target {
-    padding: 8px 12px;
+    padding: 7px 10px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 7px;
     color: var(--text);
-    font-size: 11px;
+    font-size: 10px;
     font-family: 'Syne', sans-serif;
     cursor: pointer;
     white-space: nowrap;
     transition: border-color 0.2s, color 0.2s;
   }
-
   .btn-save-target:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── 匯率卡片（保留原版） ── */
+  .rate-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .rate-card:hover { transform: translateY(-2px); }
+  .rate-card.usd  { border-top: 2px solid var(--usd); }
+  .rate-card.jpy  { border-top: 2px solid var(--jpy); }
+  .rate-card.gold { border-top: 2px solid var(--gold); }
+  .rate-card::after { content:''; position:absolute; top:0; right:0; width:80px; height:80px; border-radius:50%; opacity:0.05; filter:blur(20px); }
+  .rate-card.usd::after  { background: var(--usd); }
+  .rate-card.jpy::after  { background: var(--jpy); }
+  .rate-card.gold::after { background: var(--gold); }
+
+  .rate-label { font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .rate-tag { font-family:'JetBrains Mono',monospace; font-size:9px; padding:2px 7px; border-radius:4px; }
+  .usd  .rate-tag { background:rgba(200,255,0,0.1);    color:var(--usd); }
+  .jpy  .rate-tag { background:rgba(255,107,53,0.1);   color:var(--jpy); }
+  .gold .rate-tag { background:rgba(255,209,102,0.12); color:var(--gold); }
+
+  .rate-sell { font-family:'JetBrains Mono',monospace; font-size:clamp(22px,2.5vw,32px); font-weight:500; letter-spacing:-0.02em; line-height:1; margin-bottom:8px; }
+  .usd  .rate-sell { color:var(--usd); }
+  .jpy  .rate-sell { color:var(--jpy); }
+  .gold .rate-sell { color:var(--gold); }
+
+  .rate-sub { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); display:flex; gap:14px; }
 
   /* ── 骨架載入 ── */
   .skeleton {
@@ -658,18 +634,13 @@
     animation: shimmer 1.5s infinite;
     border-radius: 4px;
   }
-
-  @keyframes shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  .loading-text { display: inline-block; width: 80px; height: 1em; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .loading-text { display:inline-block; width:80px; height:1em; }
 
   /* ── 響應式 ── */
   @media (max-width: 900px) {
     .main-grid { grid-template-columns: 1fr; }
-    .rates-grid, .holdings-grid, .alerts-grid { grid-template-columns: 1fr; }
+    .cards-grid, .alerts-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -681,278 +652,458 @@
     <div class="header-inner">
       <div>
         <div class="logo">Personal Finance Tracker</div>
-        <h1>匯率<span>追蹤</span></h1>
+        <h1>個人<em>投資</em>追蹤</h1>
       </div>
       <div class="last-update">
-        <div><span class="update-dot"></span>即時匯率</div>
+        <div><span class="update-dot"></span>即時資料</div>
         <div id="lastUpdateTime">—</div>
       </div>
     </div>
+
+    <!-- 主頁籤 -->
+    <div class="main-nav">
+      <button class="nav-tab tab-stock active" onclick="switchPage('stock', this)">📈 股票 / ETF</button>
+      <button class="nav-tab tab-fx"           onclick="switchPage('fx', this)">💱 外幣匯率</button>
+    </div>
   </header>
 
-  <!-- 即時匯率 -->
-  <div class="section-title">即時牌告</div>
-  <div class="rates-grid">
-    <div class="rate-card usd">
-      <div class="rate-label">美元 <span class="rate-tag">USD</span></div>
-      <div class="rate-sell" id="usd-sell"><span class="skeleton loading-text"></span></div>
-      <div class="rate-sub"><span>買入</span><span id="usd-buy"><span class="skeleton loading-text"></span></span></div>
-    </div>
-    <div class="rate-card jpy">
-      <div class="rate-label">日圓 <span class="rate-tag">JPY</span></div>
-      <div class="rate-sell" id="jpy-sell"><span class="skeleton loading-text"></span></div>
-      <div class="rate-sub"><span>買入</span><span id="jpy-buy"><span class="skeleton loading-text"></span></span></div>
-    </div>
-    <div class="rate-card gold">
-      <div class="rate-label">黃金存摺 <span class="rate-tag">GOLD</span></div>
-      <div class="rate-sell" id="gold-sell"><span class="skeleton loading-text"></span></div>
-      <div class="rate-sub"><span>買入</span><span id="gold-buy"><span class="skeleton loading-text"></span></span></div>
-    </div>
-  </div>
+  <!-- ════════════════════════════════════════════ -->
+  <!--  股票頁面                                    -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="page active" id="page-stock">
 
-  <!-- 持有總覽 -->
-  <div class="section-title">持有總覽</div>
-  <div class="holdings-grid" id="holdingsGrid">
-    <div class="holding-card"><div class="holding-currency">USD</div><div style="color:var(--muted);font-size:13px;">尚無記錄</div></div>
-    <div class="holding-card"><div class="holding-currency">JPY</div><div style="color:var(--muted);font-size:13px;">尚無記錄</div></div>
-    <div class="holding-card"><div class="holding-currency">GOLD</div><div style="color:var(--muted);font-size:13px;">尚無記錄</div></div>
-  </div>
+    <!-- 即時報價 -->
+    <div class="section-title">即時報價</div>
+    <div class="cards-grid">
+      <div class="stock-card voo">
+        <div class="stock-label">Vanguard S&amp;P500 <span class="stock-tag">VOO</span></div>
+        <div class="stock-price" id="voo-price"><span class="skeleton loading-text"></span></div>
+        <div class="stock-change" id="voo-change"><span class="skeleton loading-text" style="width:60px"></span></div>
+      </div>
+      <div class="stock-card s0050">
+        <div class="stock-label">元大台灣50 <span class="stock-tag">0050</span></div>
+        <div class="stock-price" id="s0050-price"><span class="skeleton loading-text"></span></div>
+        <div class="stock-change" id="s0050-change"><span class="skeleton loading-text" style="width:60px"></span></div>
+      </div>
+      <div class="stock-card s00919">
+        <div class="stock-label">群益台灣精選高息 <span class="stock-tag">00919</span></div>
+        <div class="stock-price" id="s00919-price"><span class="skeleton loading-text"></span></div>
+        <div class="stock-change" id="s00919-change"><span class="skeleton loading-text" style="width:60px"></span></div>
+      </div>
+    </div>
 
-  <!-- 圖表 + 表單 -->
-  <div class="main-grid" id="mainGrid">
+    <!-- 持股總覽 -->
+    <div class="section-title">持股總覽</div>
+    <div class="cards-grid" id="stockHoldingsGrid">
+      <div class="holding-card"><div class="holding-symbol">VOO</div><div style="color:var(--muted);font-size:12px;">尚無記錄</div></div>
+      <div class="holding-card"><div class="holding-symbol">0050</div><div style="color:var(--muted);font-size:12px;">尚無記錄</div></div>
+      <div class="holding-card"><div class="holding-symbol">00919</div><div style="color:var(--muted);font-size:12px;">尚無記錄</div></div>
+    </div>
 
-    <!-- 走勢圖 -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-tabs">
-          <button class="chart-tab usd active" onclick="switchChart('USD',this)">USD</button>
-          <button class="chart-tab jpy"        onclick="switchChart('JPY',this)">JPY</button>
-          <button class="chart-tab gold"       onclick="switchChart('GOLD',this)">GOLD</button>
+    <!-- 走勢圖 + 表單 -->
+    <div class="main-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-tabs" id="stockChartTabs">
+            <button class="chart-tab t-voo active"  onclick="switchStockChart('VOO',this)">VOO</button>
+            <button class="chart-tab t-0050"         onclick="switchStockChart('0050',this)">0050</button>
+            <button class="chart-tab t-00919"        onclick="switchStockChart('00919',this)">00919</button>
+          </div>
+          <div class="days-tabs">
+            <button class="days-tab"        onclick="switchStockDays(30,this)">30天</button>
+            <button class="days-tab active" onclick="switchStockDays(180,this)">180天</button>
+            <button class="days-tab"        onclick="switchStockDays(365,this)">365天</button>
+          </div>
         </div>
-        <div class="days-tabs">
-          <button class="days-tab"        onclick="switchDays(30,this)">30天</button>
-          <button class="days-tab active" onclick="switchDays(180,this)">180天</button>
-          <button class="days-tab"        onclick="switchDays(365,this)">365天</button>
+        <div class="chart-wrap">
+          <canvas id="stockChart"></canvas>
+          <div class="chart-empty" id="stockChartEmpty">尚無足夠歷史資料</div>
         </div>
       </div>
-      <div class="chart-wrap">
-        <canvas id="rateChart"></canvas>
-        <div class="chart-empty" id="chartEmpty">尚無足夠歷史資料</div>
-      </div>
-    </div>
 
-    <!-- 換匯輸入表單 -->
-    <div class="form-card" id="formCard">
-      <div class="form-title">新增換匯記錄</div>
-
-      <div class="form-group">
-        <label>幣別</label>
-        <select id="f-currency">
-          <option value="USD">美元 USD</option>
-          <option value="JPY">日圓 JPY</option>
-          <option value="GOLD">黃金存摺 GOLD</option>
-        </select>
-      </div>
-
-      <div class="form-row">
+      <!-- 買入記錄表單 -->
+      <div class="form-card">
+        <div class="form-title">新增持股記錄</div>
         <div class="form-group">
-          <label>台幣金額</label>
-          <input type="number" id="f-twd" placeholder="50000" min="0" step="1">
+          <label>標的</label>
+          <select id="sf-symbol">
+            <option value="VOO">VOO — Vanguard S&P500</option>
+            <option value="0050">0050 — 元大台灣50</option>
+            <option value="00919">00919 — 群益台灣精選高息</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>股數</label>
+            <input type="number" id="sf-shares" placeholder="10" min="0" step="0.0001">
+          </div>
+          <div class="form-group">
+            <label>成交單價</label>
+            <input type="number" id="sf-price" placeholder="520.5" min="0" step="0.0001">
+          </div>
         </div>
         <div class="form-group">
-          <label>換得金額</label>
-          <input type="number" id="f-foreign" placeholder="1570" min="0" step="0.0001">
+          <label>總成本（含手續費）</label>
+          <input type="number" id="sf-cost" placeholder="5205" min="0" step="1">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>幣別</label>
+            <select id="sf-currency">
+              <option value="USD">USD</option>
+              <option value="TWD">TWD</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>買入日期</label>
+            <input type="date" id="sf-date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>備註（選填）</label>
+          <input type="text" id="sf-note" placeholder="券商 / 定期定額 ...">
+        </div>
+        <button class="btn-submit" onclick="submitStockRecord()">記錄買入</button>
+        <div class="form-msg" id="stockFormMsg"></div>
+      </div>
+    </div>
+
+    <!-- 持股記錄表格 -->
+    <div class="records-card">
+      <div class="records-header">
+        <div class="section-title" style="margin:0">持股記錄</div>
+        <div class="filter-tabs">
+          <button class="filter-tab active f-all"  onclick="filterStockRecords('ALL',this)">全部</button>
+          <button class="filter-tab f-voo"          onclick="filterStockRecords('VOO',this)">VOO</button>
+          <button class="filter-tab f-0050"         onclick="filterStockRecords('0050',this)">0050</button>
+          <button class="filter-tab f-00919"        onclick="filterStockRecords('00919',this)">00919</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>日期</th><th>標的</th><th>股數</th><th>單價</th><th>總成本</th><th>幣別</th><th>備註</th><th></th></tr>
+        </thead>
+        <tbody id="stockRecordsBody">
+          <tr class="empty-row"><td colspan="8">尚無持股記錄</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 股票通知設定 -->
+    <div class="section-title">通知設定</div>
+    <div class="alerts-grid" id="stockAlertsGrid"></div>
+
+  </div><!-- /page-stock -->
+
+
+  <!-- ════════════════════════════════════════════ -->
+  <!--  匯率頁面                                    -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="page" id="page-fx">
+
+    <!-- 即時牌告 -->
+    <div class="section-title">即時牌告</div>
+    <div class="cards-grid">
+      <div class="rate-card usd">
+        <div class="rate-label">美元 <span class="rate-tag">USD</span></div>
+        <div class="rate-sell" id="usd-sell"><span class="skeleton loading-text"></span></div>
+        <div class="rate-sub"><span>買入</span><span id="usd-buy"><span class="skeleton loading-text"></span></span></div>
+      </div>
+      <div class="rate-card jpy">
+        <div class="rate-label">日圓 <span class="rate-tag">JPY</span></div>
+        <div class="rate-sell" id="jpy-sell"><span class="skeleton loading-text"></span></div>
+        <div class="rate-sub"><span>買入</span><span id="jpy-buy"><span class="skeleton loading-text"></span></span></div>
+      </div>
+      <div class="rate-card gold">
+        <div class="rate-label">黃金存摺 <span class="rate-tag">GOLD</span></div>
+        <div class="rate-sell" id="gold-sell"><span class="skeleton loading-text"></span></div>
+        <div class="rate-sub"><span>買入</span><span id="gold-buy"><span class="skeleton loading-text"></span></span></div>
+      </div>
+    </div>
+
+    <!-- 持有總覽 -->
+    <div class="section-title">持有總覽</div>
+    <div class="cards-grid" id="holdingsGrid">
+      <div class="holding-card"><div class="holding-symbol">USD</div><div style="color:var(--muted);font-size:12px;">尚無記錄</div></div>
+      <div class="holding-card"><div class="holding-symbol">JPY</div><div style="color:var(--muted);font-size:12px;">尚無記錄</div></div>
+      <div class="holding-card"><div class="holding-symbol">GOLD</div><div style="color:var(--muted);font-size:12px;">尚無記錄</div></div>
+    </div>
+
+    <!-- 走勢圖 + 表單 -->
+    <div class="main-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-tabs">
+            <button class="chart-tab t-usd active" onclick="switchFxChart('USD',this)">USD</button>
+            <button class="chart-tab t-jpy"         onclick="switchFxChart('JPY',this)">JPY</button>
+            <button class="chart-tab t-gold"        onclick="switchFxChart('GOLD',this)">GOLD</button>
+          </div>
+          <div class="days-tabs">
+            <button class="days-tab"        onclick="switchFxDays(30,this)">30天</button>
+            <button class="days-tab active" onclick="switchFxDays(180,this)">180天</button>
+            <button class="days-tab"        onclick="switchFxDays(365,this)">365天</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="rateChart"></canvas>
+          <div class="chart-empty" id="chartEmpty">尚無足夠歷史資料</div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label>成交匯率</label>
-        <input type="number" id="f-rate" placeholder="31.85" min="0" step="0.0001">
+      <!-- 換匯表單 -->
+      <div class="form-card">
+        <div class="form-title">新增換匯記錄</div>
+        <div class="form-group">
+          <label>幣別</label>
+          <select id="f-currency">
+            <option value="USD">美元 USD</option>
+            <option value="JPY">日圓 JPY</option>
+            <option value="GOLD">黃金存摺 GOLD</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>台幣金額</label>
+            <input type="number" id="f-twd" placeholder="50000" min="0" step="1">
+          </div>
+          <div class="form-group">
+            <label>換得金額</label>
+            <input type="number" id="f-foreign" placeholder="1570" min="0" step="0.0001">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>成交匯率</label>
+          <input type="number" id="f-rate" placeholder="31.85" min="0" step="0.0001">
+        </div>
+        <div class="form-group">
+          <label>換匯日期</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="form-group">
+          <label>備註（選填）</label>
+          <input type="text" id="f-note" placeholder="銀行臨櫃 / 網銀 ...">
+        </div>
+        <button class="btn-submit" onclick="submitRecord()">記錄換匯</button>
+        <div class="form-msg" id="formMsg"></div>
       </div>
-
-      <div class="form-group">
-        <label>換匯日期</label>
-        <input type="date" id="f-date">
-      </div>
-
-      <div class="form-group">
-        <label>備註（選填）</label>
-        <input type="text" id="f-note" placeholder="銀行臨櫃 / 網銀 ...">
-      </div>
-
-      <button class="btn-submit" onclick="submitRecord()">記錄換匯</button>
-      <div class="form-msg" id="formMsg"></div>
     </div>
-  </div>
 
-  <!-- 換匯記錄 -->
-  <div class="records-card">
-    <div class="records-header">
-      <div class="section-title" style="margin:0">換匯記錄</div>
-      <div class="filter-tabs">
-        <button class="filter-tab active f-all"  onclick="filterRecords('ALL',this)">全部</button>
-        <button class="filter-tab f-usd"          onclick="filterRecords('USD',this)">USD</button>
-        <button class="filter-tab f-jpy"          onclick="filterRecords('JPY',this)">JPY</button>
-        <button class="filter-tab f-gold"         onclick="filterRecords('GOLD',this)">GOLD</button>
+    <!-- 換匯記錄表格 -->
+    <div class="records-card">
+      <div class="records-header">
+        <div class="section-title" style="margin:0">換匯記錄</div>
+        <div class="filter-tabs">
+          <button class="filter-tab active f-all"  onclick="filterRecords('ALL',this)">全部</button>
+          <button class="filter-tab f-usd"          onclick="filterRecords('USD',this)">USD</button>
+          <button class="filter-tab f-jpy"          onclick="filterRecords('JPY',this)">JPY</button>
+          <button class="filter-tab f-gold"         onclick="filterRecords('GOLD',this)">GOLD</button>
+        </div>
       </div>
+      <table>
+        <thead>
+          <tr><th>日期</th><th>幣別</th><th>台幣</th><th>換得</th><th>匯率</th><th>備註</th><th></th></tr>
+        </thead>
+        <tbody id="recordsBody">
+          <tr class="empty-row"><td colspan="7">尚無換匯記錄</td></tr>
+        </tbody>
+      </table>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>日期</th><th>幣別</th><th>台幣</th><th>換得</th><th>匯率</th><th>備註</th><th></th>
-        </tr>
-      </thead>
-      <tbody id="recordsBody">
-        <tr class="empty-row"><td colspan="7">尚無換匯記錄</td></tr>
-      </tbody>
-    </table>
-  </div>
 
-  <!-- 通知設定 -->
-  <div class="section-title">通知設定</div>
-  <div class="alerts-grid" id="alertsGrid"></div>
+    <!-- 匯率通知設定 -->
+    <div class="section-title">通知設定</div>
+    <div class="alerts-grid" id="alertsGrid"></div>
 
-</div>
+  </div><!-- /page-fx -->
+
+</div><!-- /container -->
 
 <script>
-// ── 狀態 ──────────────────────────────────────────
-let currentChart  = 'USD';
-let currentDays   = 180;
-let currentFilter = 'ALL';
-let chartInstance = null;
-let allRecords    = [];
+// ════════════════════════════════════════════════
+//  狀態
+// ════════════════════════════════════════════════
+let currentStockChart  = 'VOO';
+let currentStockDays   = 180;
+let stockChartInstance = null;
+let allStockRecords    = [];
 
-// ── 初始化 ────────────────────────────────────────
+let currentFxChart  = 'USD';
+let currentFxDays   = 180;
+let fxChartInstance = null;
+let allFxRecords    = [];
+
+// ════════════════════════════════════════════════
+//  頁籤切換
+// ════════════════════════════════════════════════
+function switchPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  btn.classList.add('active');
+
+  // 切換後重繪圖表（canvas 在隱藏時尺寸會歸零）
+  if (page === 'stock') loadStockChart(currentStockChart, currentStockDays);
+  if (page === 'fx')    loadFxChart(currentFxChart, currentFxDays);
+}
+
+// ════════════════════════════════════════════════
+//  初始化
+// ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('sf-date').value = today;
+  document.getElementById('f-date').value  = today;
+
+  // 股票頁（預設）
+  loadStockPrices();
+  loadStockHoldings();
+  loadStockChart(currentStockChart, currentStockDays);
+  loadStockRecords();
+  loadStockAlerts();
+
+  // 匯率頁（背景預載）
   loadRates();
   loadHoldings();
-  loadChart(currentChart, currentDays);
-  loadRecords();
+  loadFxRecords();
   loadAlerts();
-  setInterval(loadRates, 5 * 60 * 1000);
+
+  setInterval(loadStockPrices, 5 * 60 * 1000);
+  setInterval(loadRates,       5 * 60 * 1000);
 });
 
-// ── 載入即時匯率 ──────────────────────────────────
-async function loadRates() {
+// ════════════════════════════════════════════════
+//  股票 — 即時報價
+// ════════════════════════════════════════════════
+const stockColors = { VOO: '#00d4ff', '0050': '#b48eff', '00919': '#ff8fab' };
+
+async function loadStockPrices() {
   try {
-    const res  = await fetch('/api/rates/latest');
+    const res  = await fetch('/api/stocks/latest');
     const data = await res.json();
-    const map  = { USD: ['usd-sell','usd-buy'], JPY: ['jpy-sell','jpy-buy'], GOLD: ['gold-sell','gold-buy'] };
     let latestTime = '—';
 
-    for (const [code, [sellId, buyId]] of Object.entries(map)) {
-      if (data[code]) {
-        document.getElementById(sellId).textContent = formatRate(code, data[code].sell);
-        document.getElementById(buyId).textContent  = formatRate(code, data[code].buy);
-        latestTime = data[code].time;
+    const map = {
+      VOO:   ['voo-price',   'voo-change'],
+      '0050':['s0050-price', 's0050-change'],
+      '00919':['s00919-price','s00919-change'],
+    };
+
+    for (const [sym, [priceId, changeId]] of Object.entries(map)) {
+      if (data[sym]) {
+        const d = data[sym];
+        document.getElementById(priceId).textContent  = formatStockPrice(sym, d.price);
+        const changeEl = document.getElementById(changeId);
+        const sign = d.change_pct > 0 ? '+' : '';
+        changeEl.textContent  = `${sign}${d.change_pct?.toFixed(2) ?? '0.00'}%`;
+        changeEl.className = 'stock-change ' + (d.change_pct > 0 ? 'change-up' : d.change_pct < 0 ? 'change-down' : 'change-flat');
+        latestTime = d.time;
       } else {
-        document.getElementById(sellId).textContent = '—';
-        document.getElementById(buyId).textContent  = '—';
+        document.getElementById(priceId).textContent  = '—';
+        document.getElementById(changeId).textContent = '—';
       }
     }
     document.getElementById('lastUpdateTime').textContent = latestTime;
-  } catch(e) { console.error('載入匯率失敗', e); }
+  } catch(e) { console.error('載入股票報價失敗', e); }
 }
 
-function formatRate(currency, val) {
-  if (currency === 'JPY')  return val.toFixed(4);
-  if (currency === 'GOLD') return val.toLocaleString('zh-TW', { minimumFractionDigits: 0 });
-  return val.toFixed(3);
+function formatStockPrice(sym, val) {
+  if (!val && val !== 0) return '—';
+  return sym === 'VOO' ? val.toFixed(2) : val.toFixed(2);
 }
 
-// ── 載入持有總覽 ──────────────────────────────────
-async function loadHoldings() {
+// ════════════════════════════════════════════════
+//  股票 — 持股總覽
+// ════════════════════════════════════════════════
+async function loadStockHoldings() {
   try {
-    const res  = await fetch('/api/holdings');
+    const res  = await fetch('/api/stocks/holdings');
     const data = await res.json();
-    const grid = document.getElementById('holdingsGrid');
+    const grid = document.getElementById('stockHoldingsGrid');
     grid.innerHTML = '';
 
-    for (const [code, info] of Object.entries(data)) {
-      const unit       = code === 'GOLD' ? 'g' : code;
-      const avgStr     = info.weighted_avg_rate ? formatRate(code, info.weighted_avg_rate) : '—';
-      const foreignStr = info.total_foreign > 0 ? `${info.total_foreign.toLocaleString('zh-TW')} ${unit}` : '—';
-      const twdStr     = info.total_twd > 0 ? `NT$ ${info.total_twd.toLocaleString('zh-TW')}` : '—';
+    for (const [sym, info] of Object.entries(data)) {
+      const unit    = sym === 'VOO' ? 'USD' : 'TWD';
+      const avgStr  = info.weighted_avg_cost ? info.weighted_avg_cost.toFixed(2) : '—';
+      const shareStr = info.total_shares > 0 ? `${info.total_shares.toLocaleString('zh-TW')} 股` : '—';
+      const costStr  = info.total_cost > 0
+        ? (info.currency === 'USD'
+            ? `$ ${info.total_cost.toLocaleString('zh-TW')}`
+            : `NT$ ${info.total_cost.toLocaleString('zh-TW')}`)
+        : '—';
 
       grid.innerHTML += `
         <div class="holding-card">
-          <div class="holding-currency">${code}</div>
+          <div class="holding-symbol">${sym}</div>
           <div class="holding-row">
-            <span class="holding-key">台幣投入</span>
-            <span class="holding-val">${twdStr}</span>
+            <span class="holding-key">總成本</span>
+            <span class="holding-val">${costStr}</span>
           </div>
           <div class="holding-row">
-            <span class="holding-key">持有</span>
-            <span class="holding-val">${foreignStr}</span>
+            <span class="holding-key">持有股數</span>
+            <span class="holding-val">${shareStr}</span>
           </div>
           <div class="holding-avg">
-            <span class="avg-label">加權平均匯率</span>
+            <span class="avg-label">加權平均成本</span>
             <span>${avgStr}</span>
           </div>
         </div>`;
     }
-  } catch(e) { console.error('載入持有總覽失敗', e); }
+  } catch(e) { console.error('載入持股總覽失敗', e); }
 }
 
-// ── 走勢圖 ────────────────────────────────────────
-const chartColors = { USD: '#c8ff00', JPY: '#ff6b35', GOLD: '#ffd166' };
-
-async function loadChart(currency, days) {
+// ════════════════════════════════════════════════
+//  股票 — 走勢圖
+// ════════════════════════════════════════════════
+async function loadStockChart(symbol, days) {
   try {
-    const res  = await fetch(`/api/rates/history/${currency}?days=${days}`);
-    const data = await res.json();
-    const empty = document.getElementById('chartEmpty');
+    const res   = await fetch(`/api/stocks/history/${symbol}?days=${days}`);
+    const data  = await res.json();
+    const empty = document.getElementById('stockChartEmpty');
 
     if (!data || data.length < 2) {
       empty.style.display = 'flex';
-      if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+      if (stockChartInstance) { stockChartInstance.destroy(); stockChartInstance = null; }
       return;
     }
 
     empty.style.display = 'none';
     const labels = data.map(d => d.time.split(' ')[0]);
-    const sells  = data.map(d => d.sell);
-    const buys   = data.map(d => d.buy);
-    const color  = chartColors[currency];
+    const prices = data.map(d => d.price);
+    const color  = stockColors[symbol] || '#ffd166';
 
-    if (chartInstance) chartInstance.destroy();
+    if (stockChartInstance) stockChartInstance.destroy();
 
-    const ctx  = document.getElementById('rateChart').getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 0, 260);
-    grad.addColorStop(0, color + '22');
+    const ctx  = document.getElementById('stockChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 240);
+    grad.addColorStop(0, color + '28');
     grad.addColorStop(1, color + '00');
 
-    chartInstance = new Chart(ctx, {
+    stockChartInstance = new Chart(ctx, {
       type: 'line',
       data: {
         labels,
-        datasets: [
-          {
-            label: '賣出', data: sells,
-            borderColor: color, backgroundColor: grad,
-            borderWidth: 2, pointRadius: 0, pointHoverRadius: 4,
-            fill: true, tension: 0.3
-          },
-          {
-            label: '買入', data: buys,
-            borderColor: color + '66', backgroundColor: 'transparent',
-            borderWidth: 1.5, pointRadius: 0, borderDash: [4,4],
-            fill: false, tension: 0.3
-          }
-        ]
+        datasets: [{
+          label: symbol,
+          data: prices,
+          borderColor: color,
+          backgroundColor: grad,
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true,
+          tension: 0.3,
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { labels: { color: '#666680', font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 16 } },
+          legend: { display: false },
           tooltip: {
             backgroundColor: '#1a1a24', borderColor: '#2a2a3a', borderWidth: 1,
             titleColor: '#666680', bodyColor: '#e8e8f0',
-            titleFont: { family: 'JetBrains Mono', size: 11 },
-            bodyFont:  { family: 'JetBrains Mono', size: 12 }
+            titleFont: { family: 'JetBrains Mono', size: 10 },
+            bodyFont:  { family: 'JetBrains Mono', size: 12 },
           }
         },
         scales: {
@@ -961,145 +1112,381 @@ async function loadChart(currency, days) {
         }
       }
     });
-  } catch(e) { console.error('載入圖表失敗', e); }
+  } catch(e) { console.error('載入股票圖表失敗', e); }
 }
 
-function switchChart(currency, btn) {
-  currentChart = currency;
-  document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
+function switchStockChart(symbol, btn) {
+  currentStockChart = symbol;
+  document.querySelectorAll('#stockChartTabs .chart-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  loadChart(currency, currentDays);
+  loadStockChart(symbol, currentStockDays);
 }
 
-function switchDays(days, btn) {
-  currentDays = days;
-  document.querySelectorAll('.days-tab').forEach(b => b.classList.remove('active'));
+function switchStockDays(days, btn) {
+  currentStockDays = days;
+  // 只更新股票頁的天數按鈕
+  btn.closest('.days-tabs').querySelectorAll('.days-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  loadChart(currentChart, days);
+  loadStockChart(currentStockChart, days);
 }
 
-// ── 換匯記錄 ──────────────────────────────────────
-async function loadRecords() {
+// ════════════════════════════════════════════════
+//  股票 — 持股記錄
+// ════════════════════════════════════════════════
+async function loadStockRecords() {
   try {
-    const res = await fetch('/api/records');
-    allRecords = await res.json();
-    renderRecords(allRecords);
-  } catch(e) { console.error('載入記錄失敗', e); }
+    const res = await fetch('/api/stocks/records');
+    allStockRecords = await res.json();
+    renderStockRecords(allStockRecords);
+  } catch(e) { console.error('載入持股記錄失敗', e); }
 }
 
-function renderRecords(records) {
-  const tbody = document.getElementById('recordsBody');
+function renderStockRecords(records) {
+  const tbody = document.getElementById('stockRecordsBody');
   if (!records.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">尚無換匯記錄</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">尚無持股記錄</td></tr>';
     return;
   }
   tbody.innerHTML = records.map(r => `
     <tr>
-      <td>${r.exchanged_at}</td>
-      <td><span class="currency-badge badge-${r.currency}">${r.currency}</span></td>
-      <td>NT$ ${r.twd_amount.toLocaleString('zh-TW')}</td>
-      <td>${r.foreign_amount.toLocaleString('zh-TW', { maximumFractionDigits: 4 })}</td>
-      <td>${r.rate_used}</td>
+      <td>${r.purchased_at}</td>
+      <td><span class="sym-badge badge-${r.symbol}">${r.symbol}</span></td>
+      <td>${r.shares.toLocaleString('zh-TW', {maximumFractionDigits:4})}</td>
+      <td>${r.price_per_share.toFixed(2)}</td>
+      <td>${r.total_cost.toLocaleString('zh-TW')}</td>
+      <td style="color:var(--muted)">${r.currency}</td>
       <td style="color:var(--muted)">${r.note || '—'}</td>
-      <td><button class="btn-del" onclick="deleteRecord(${r.id})">刪除</button></td>
+      <td><button class="btn-del" onclick="deleteStockRecord(${r.id})">刪除</button></td>
     </tr>`).join('');
 }
 
-function filterRecords(currency, btn) {
-  currentFilter = currency;
-  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+function filterStockRecords(symbol, btn) {
+  document.querySelectorAll('#page-stock .filter-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderRecords(currency === 'ALL' ? allRecords : allRecords.filter(r => r.currency === currency));
+  renderStockRecords(symbol === 'ALL' ? allStockRecords : allStockRecords.filter(r => r.symbol === symbol));
 }
 
-async function deleteRecord(id) {
+async function deleteStockRecord(id) {
   if (!confirm('確定刪除這筆記錄？')) return;
   try {
-    await fetch(`/api/records/${id}`, { method: 'DELETE' });
-    await loadRecords();
-    await loadHoldings();
+    await fetch(`/api/stocks/records/${id}`, { method: 'DELETE' });
+    await loadStockRecords();
+    await loadStockHoldings();
   } catch(e) { console.error('刪除失敗', e); }
 }
 
-// ── 新增換匯記錄 ──────────────────────────────────
-async function submitRecord() {
-  const msg     = document.getElementById('formMsg');
-  const currency = document.getElementById('f-currency').value;
-  const twd     = parseFloat(document.getElementById('f-twd').value);
-  const foreign = parseFloat(document.getElementById('f-foreign').value);
-  const rate    = parseFloat(document.getElementById('f-rate').value);
-  const date    = document.getElementById('f-date').value;
-  const note    = document.getElementById('f-note').value;
+async function submitStockRecord() {
+  const msg     = document.getElementById('stockFormMsg');
+  const symbol  = document.getElementById('sf-symbol').value;
+  const shares  = parseFloat(document.getElementById('sf-shares').value);
+  const price   = parseFloat(document.getElementById('sf-price').value);
+  const cost    = parseFloat(document.getElementById('sf-cost').value);
+  const currency= document.getElementById('sf-currency').value;
+  const date    = document.getElementById('sf-date').value;
+  const note    = document.getElementById('sf-note').value;
 
-  if (!twd || !foreign || !rate || !date) {
+  if (!shares || !price || !cost || !date) {
     msg.className = 'form-msg err';
     msg.textContent = '請填寫所有必填欄位';
     return;
   }
 
   try {
-    const res = await fetch('/api/records', {
+    const res = await fetch('/api/stocks/records', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currency, twd_amount: twd, foreign_amount: foreign, rate_used: rate, exchanged_at: date, note })
+      body: JSON.stringify({ symbol, shares, price_per_share: price, total_cost: cost, currency, purchased_at: date, note }),
     });
-
     if (res.ok) {
       msg.className = 'form-msg ok';
       msg.textContent = '✓ 記錄已儲存';
-      ['f-twd','f-foreign','f-rate','f-note'].forEach(id => document.getElementById(id).value = '');
-      await loadRecords();
-      await loadHoldings();
+      ['sf-shares','sf-price','sf-cost','sf-note'].forEach(id => document.getElementById(id).value = '');
+      await loadStockRecords();
+      await loadStockHoldings();
       setTimeout(() => msg.textContent = '', 3000);
     } else {
       const err = await res.json();
       msg.className = 'form-msg err';
       msg.textContent = err.error || '儲存失敗';
     }
-  } catch(e) {
-    msg.className = 'form-msg err';
-    msg.textContent = '連線失敗';
-  }
+  } catch(e) { msg.className = 'form-msg err'; msg.textContent = '連線失敗'; }
 }
 
-// ── 通知設定 ──────────────────────────────────────
-async function loadAlerts() {
-  const grid = document.getElementById('alertsGrid');
+// ════════════════════════════════════════════════
+//  股票 — 通知設定
+// ════════════════════════════════════════════════
+async function loadStockAlerts() {
+  const grid = document.getElementById('stockAlertsGrid');
   grid.innerHTML = '';
 
-  for (const currency of ['USD','JPY','GOLD']) {
+  for (const sym of ['VOO','0050','00919']) {
     try {
-      const res = await fetch(`/api/alerts/${currency}`);
+      const res = await fetch(`/api/stocks/alerts/${sym}`);
       const s   = await res.json();
 
       grid.innerHTML += `
         <div class="alert-card">
-          <div class="alert-currency">${currency} 通知設定</div>
+          <div class="alert-symbol">${sym} 通知設定</div>
           <div class="alert-row">
             <span class="alert-key">3 個月低點</span>
-            <label class="toggle">
-              <input type="checkbox" ${s.alert_3m_low ? 'checked' : ''} onchange="updateAlert('${currency}','alert_3m_low',this.checked)">
-              <div class="toggle-track"></div><div class="toggle-thumb"></div>
-            </label>
+            <label class="toggle"><input type="checkbox" ${s.alert_3m_low?'checked':''} onchange="updateStockAlert('${sym}','alert_3m_low',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
           <div class="alert-row">
             <span class="alert-key">半年低點</span>
-            <label class="toggle">
-              <input type="checkbox" ${s.alert_6m_low ? 'checked' : ''} onchange="updateAlert('${currency}','alert_6m_low',this.checked)">
-              <div class="toggle-track"></div><div class="toggle-thumb"></div>
-            </label>
+            <label class="toggle"><input type="checkbox" ${s.alert_6m_low?'checked':''} onchange="updateStockAlert('${sym}','alert_6m_low',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
           <div class="alert-row">
-            <span class="alert-key">低於加權平均</span>
-            <label class="toggle">
-              <input type="checkbox" ${s.alert_below_avg ? 'checked' : ''} onchange="updateAlert('${currency}','alert_below_avg',this.checked)">
-              <div class="toggle-track"></div><div class="toggle-thumb"></div>
-            </label>
+            <span class="alert-key">低於加權平均成本</span>
+            <label class="toggle"><input type="checkbox" ${s.alert_below_avg?'checked':''} onchange="updateStockAlert('${sym}','alert_below_avg',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
+          <div class="alert-row">
+            <span class="alert-key">三天跌幅 ≥ 5%</span>
+            <label class="toggle"><input type="checkbox" ${s.alert_3d_drop?'checked':''} onchange="updateStockAlert('${sym}','alert_3d_drop',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="target-input-wrap">
+            <label>目標買入價</label>
+            <div class="target-row">
+              <input type="number" id="starget-${sym}" value="${s.target_price||''}" placeholder="未設定" step="0.01" min="0">
+              <button class="btn-save-target" onclick="saveStockTarget('${sym}')">儲存</button>
+            </div>
+          </div>
+        </div>`;
+    } catch(e) { console.error(`載入 ${sym} 通知設定失敗`, e); }
+  }
+}
+
+async function updateStockAlert(sym, field, value) {
+  await fetch(`/api/stocks/alerts/${sym}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ [field]: value }),
+  });
+}
+
+async function saveStockTarget(sym) {
+  const val = parseFloat(document.getElementById(`starget-${sym}`).value);
+  await fetch(`/api/stocks/alerts/${sym}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_price: isNaN(val) ? null : val }),
+  });
+}
+
+// ════════════════════════════════════════════════
+//  匯率 — 即時匯率
+// ════════════════════════════════════════════════
+async function loadRates() {
+  try {
+    const res  = await fetch('/api/rates/latest');
+    const data = await res.json();
+    const map  = { USD:['usd-sell','usd-buy'], JPY:['jpy-sell','jpy-buy'], GOLD:['gold-sell','gold-buy'] };
+    for (const [code,[sellId,buyId]] of Object.entries(map)) {
+      if (data[code]) {
+        document.getElementById(sellId).textContent = formatRate(code, data[code].sell);
+        document.getElementById(buyId).textContent  = formatRate(code, data[code].buy);
+      } else {
+        document.getElementById(sellId).textContent = '—';
+        document.getElementById(buyId).textContent  = '—';
+      }
+    }
+  } catch(e) { console.error('載入匯率失敗', e); }
+}
+
+function formatRate(currency, val) {
+  if (!val && val !== 0) return '—';
+  if (currency === 'JPY')  return val.toFixed(4);
+  if (currency === 'GOLD') return val.toLocaleString('zh-TW', { minimumFractionDigits: 0 });
+  return val.toFixed(3);
+}
+
+// ════════════════════════════════════════════════
+//  匯率 — 持有總覽
+// ════════════════════════════════════════════════
+async function loadHoldings() {
+  try {
+    const res  = await fetch('/api/holdings');
+    const data = await res.json();
+    const grid = document.getElementById('holdingsGrid');
+    grid.innerHTML = '';
+    for (const [code, info] of Object.entries(data)) {
+      const unit       = code === 'GOLD' ? 'g' : code;
+      const avgStr     = info.weighted_avg_rate ? formatRate(code, info.weighted_avg_rate) : '—';
+      const foreignStr = info.total_foreign > 0 ? `${info.total_foreign.toLocaleString('zh-TW')} ${unit}` : '—';
+      const twdStr     = info.total_twd > 0 ? `NT$ ${info.total_twd.toLocaleString('zh-TW')}` : '—';
+      grid.innerHTML += `
+        <div class="holding-card">
+          <div class="holding-symbol">${code}</div>
+          <div class="holding-row"><span class="holding-key">台幣投入</span><span class="holding-val">${twdStr}</span></div>
+          <div class="holding-row"><span class="holding-key">持有</span><span class="holding-val">${foreignStr}</span></div>
+          <div class="holding-avg"><span class="avg-label">加權平均匯率</span><span>${avgStr}</span></div>
+        </div>`;
+    }
+  } catch(e) { console.error('載入持有總覽失敗', e); }
+}
+
+// ════════════════════════════════════════════════
+//  匯率 — 走勢圖
+// ════════════════════════════════════════════════
+const fxColors = { USD: '#c8ff00', JPY: '#ff6b35', GOLD: '#ffd166' };
+
+async function loadFxChart(currency, days) {
+  try {
+    const res   = await fetch(`/api/rates/history/${currency}?days=${days}`);
+    const data  = await res.json();
+    const empty = document.getElementById('chartEmpty');
+
+    if (!data || data.length < 2) {
+      empty.style.display = 'flex';
+      if (fxChartInstance) { fxChartInstance.destroy(); fxChartInstance = null; }
+      return;
+    }
+
+    empty.style.display = 'none';
+    const labels = data.map(d => d.time.split(' ')[0]);
+    const sells  = data.map(d => d.sell);
+    const buys   = data.map(d => d.buy);
+    const color  = fxColors[currency];
+
+    if (fxChartInstance) fxChartInstance.destroy();
+
+    const ctx  = document.getElementById('rateChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 240);
+    grad.addColorStop(0, color + '22');
+    grad.addColorStop(1, color + '00');
+
+    fxChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label:'賣出', data:sells, borderColor:color, backgroundColor:grad, borderWidth:2, pointRadius:0, pointHoverRadius:4, fill:true, tension:0.3 },
+          { label:'買入', data:buys,  borderColor:color+'66', backgroundColor:'transparent', borderWidth:1.5, pointRadius:0, borderDash:[4,4], fill:false, tension:0.3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color:'#666680', font:{ family:'JetBrains Mono', size:11 }, boxWidth:16 } },
+          tooltip: { backgroundColor:'#1a1a24', borderColor:'#2a2a3a', borderWidth:1, titleColor:'#666680', bodyColor:'#e8e8f0', titleFont:{family:'JetBrains Mono',size:10}, bodyFont:{family:'JetBrains Mono',size:12} }
+        },
+        scales: {
+          x: { grid:{color:'#2a2a3a'}, ticks:{color:'#666680', font:{family:'JetBrains Mono',size:10}, maxTicksLimit:8, maxRotation:0} },
+          y: { grid:{color:'#2a2a3a'}, ticks:{color:'#666680', font:{family:'JetBrains Mono',size:10}} }
+        }
+      }
+    });
+  } catch(e) { console.error('載入匯率圖表失敗', e); }
+}
+
+function switchFxChart(currency, btn) {
+  currentFxChart = currency;
+  document.querySelectorAll('#page-fx .chart-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadFxChart(currency, currentFxDays);
+}
+
+function switchFxDays(days, btn) {
+  currentFxDays = days;
+  btn.closest('.days-tabs').querySelectorAll('.days-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadFxChart(currentFxChart, days);
+}
+
+// ════════════════════════════════════════════════
+//  匯率 — 換匯記錄
+// ════════════════════════════════════════════════
+async function loadFxRecords() {
+  try {
+    const res = await fetch('/api/records');
+    allFxRecords = await res.json();
+    renderRecords(allFxRecords);
+  } catch(e) { console.error('載入換匯記錄失敗', e); }
+}
+
+function renderRecords(records) {
+  const tbody = document.getElementById('recordsBody');
+  if (!records.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">尚無換匯記錄</td></tr>'; return; }
+  tbody.innerHTML = records.map(r => `
+    <tr>
+      <td>${r.exchanged_at}</td>
+      <td><span class="sym-badge badge-${r.currency}">${r.currency}</span></td>
+      <td>NT$ ${r.twd_amount.toLocaleString('zh-TW')}</td>
+      <td>${r.foreign_amount.toLocaleString('zh-TW',{maximumFractionDigits:4})}</td>
+      <td>${r.rate_used}</td>
+      <td style="color:var(--muted)">${r.note||'—'}</td>
+      <td><button class="btn-del" onclick="deleteRecord(${r.id})">刪除</button></td>
+    </tr>`).join('');
+}
+
+function filterRecords(currency, btn) {
+  document.querySelectorAll('#page-fx .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRecords(currency === 'ALL' ? allFxRecords : allFxRecords.filter(r => r.currency === currency));
+}
+
+async function deleteRecord(id) {
+  if (!confirm('確定刪除這筆記錄？')) return;
+  try {
+    await fetch(`/api/records/${id}`, { method: 'DELETE' });
+    await loadFxRecords();
+    await loadHoldings();
+  } catch(e) { console.error('刪除失敗', e); }
+}
+
+async function submitRecord() {
+  const msg      = document.getElementById('formMsg');
+  const currency = document.getElementById('f-currency').value;
+  const twd      = parseFloat(document.getElementById('f-twd').value);
+  const foreign  = parseFloat(document.getElementById('f-foreign').value);
+  const rate     = parseFloat(document.getElementById('f-rate').value);
+  const date     = document.getElementById('f-date').value;
+  const note     = document.getElementById('f-note').value;
+
+  if (!twd || !foreign || !rate || !date) {
+    msg.className = 'form-msg err'; msg.textContent = '請填寫所有必填欄位'; return;
+  }
+
+  try {
+    const res = await fetch('/api/records', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currency, twd_amount:twd, foreign_amount:foreign, rate_used:rate, exchanged_at:date, note }),
+    });
+    if (res.ok) {
+      msg.className = 'form-msg ok'; msg.textContent = '✓ 記錄已儲存';
+      ['f-twd','f-foreign','f-rate','f-note'].forEach(id => document.getElementById(id).value = '');
+      await loadFxRecords();
+      await loadHoldings();
+      setTimeout(() => msg.textContent = '', 3000);
+    } else {
+      const err = await res.json();
+      msg.className = 'form-msg err'; msg.textContent = err.error || '儲存失敗';
+    }
+  } catch(e) { msg.className = 'form-msg err'; msg.textContent = '連線失敗'; }
+}
+
+// ════════════════════════════════════════════════
+//  匯率 — 通知設定
+// ════════════════════════════════════════════════
+async function loadAlerts() {
+  const grid = document.getElementById('alertsGrid');
+  grid.innerHTML = '';
+  for (const currency of ['USD','JPY','GOLD']) {
+    try {
+      const res = await fetch(`/api/alerts/${currency}`);
+      const s   = await res.json();
+      grid.innerHTML += `
+        <div class="alert-card">
+          <div class="alert-symbol">${currency} 通知設定</div>
+          <div class="alert-row"><span class="alert-key">3 個月低點</span><label class="toggle"><input type="checkbox" ${s.alert_3m_low?'checked':''} onchange="updateAlert('${currency}','alert_3m_low',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          <div class="alert-row"><span class="alert-key">半年低點</span><label class="toggle"><input type="checkbox" ${s.alert_6m_low?'checked':''} onchange="updateAlert('${currency}','alert_6m_low',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          <div class="alert-row"><span class="alert-key">低於加權平均</span><label class="toggle"><input type="checkbox" ${s.alert_below_avg?'checked':''} onchange="updateAlert('${currency}','alert_below_avg',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
           <div class="target-input-wrap">
             <label>目標匯率</label>
             <div class="target-row">
-              <input type="number" id="target-${currency}" value="${s.target_rate || ''}" placeholder="未設定" step="0.0001" min="0">
+              <input type="number" id="target-${currency}" value="${s.target_rate||''}" placeholder="未設定" step="0.0001" min="0">
               <button class="btn-save-target" onclick="saveTarget('${currency}')">儲存</button>
             </div>
           </div>
@@ -1112,7 +1499,7 @@ async function updateAlert(currency, field, value) {
   await fetch(`/api/alerts/${currency}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ [field]: value })
+    body: JSON.stringify({ [field]: value }),
   });
 }
 
@@ -1121,7 +1508,7 @@ async function saveTarget(currency) {
   await fetch(`/api/alerts/${currency}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target_rate: isNaN(val) ? null : val })
+    body: JSON.stringify({ target_rate: isNaN(val) ? null : val }),
   });
 }
 </script>
