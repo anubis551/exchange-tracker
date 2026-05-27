@@ -35,6 +35,7 @@ def scheduled_fetch_and_alert():
     print(f"\n[Scheduler] 執行中 {datetime.now().strftime('%H:%M:%S')}")
     db = SessionLocal()
     try:
+        # 匯率抓取
         results = fetch_all()
         if not results:
             print("[Scheduler] 抓取失敗，略過本次")
@@ -45,6 +46,23 @@ def scheduled_fetch_and_alert():
 
         alerts = run_all_checks(db)
 
+        # 股票抓取
+        stock_results = fetch_all_stocks()
+        for sym, data in stock_results.items():
+            save_stock_price(
+                db, sym,
+                price=data["price"],
+                open_price=data["open"],
+                prev_close=data["prev_close"],
+                change_pct=data["change_pct"],
+                volume=data["volume"],
+            )
+
+        stock_alerts = run_all_stock_checks(db)
+        if stock_alerts:
+            alerts.extend(stock_alerts)
+
+        # 發通知
         if alerts:
             success = line_notifier.send_alerts(alerts)
             if not success:
@@ -54,30 +72,6 @@ def scheduled_fetch_and_alert():
 
     finally:
         db.close()
-# 股票抓取
-  stock_results = fetch_all_stocks()
-  for sym, data in stock_results.items():
-      save_stock_price(
-          db, sym,
-          price=data["price"],
-          open_price=data["open"],
-          prev_close=data["prev_close"],
-          change_pct=data["change_pct"],
-          volume=data["volume"],
-      )
- 
-  stock_alerts = run_all_stock_checks(db)
-  if stock_alerts:
-      alerts.extend(stock_alerts)
-
-scheduler = BackgroundScheduler(timezone="Asia/Taipei")
-scheduler.add_job(
-    scheduled_fetch_and_alert,
-    "interval",
-    minutes=config.FETCH_INTERVAL_MINUTES,
-    next_run_time=datetime.now()
-)
-scheduler.start()
 
 
 # ════════════════════════════════════════════════════
