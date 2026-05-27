@@ -12,7 +12,7 @@
     --surface:   #111118;
     --surface2:  #1a1a24;
     --border:    #2a2a3a;
-    --accent:    #c8ff00;
+    --accent:    #ffd166;
     --accent2:   #ff6b35;
     --accent3:   #00d4ff;
     --text:      #e8e8f0;
@@ -32,13 +32,12 @@
     overflow-x: hidden;
   }
 
-  /* ── 背景紋理 ── */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background-image:
-      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(200,255,0,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(255,209,102,0.04) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,212,255,0.03) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
@@ -80,11 +79,10 @@
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.02em;
+    color: var(--gold);
   }
 
-  h1 span {
-    color: var(--accent);
-  }
+  h1 span { color: var(--gold); }
 
   .last-update {
     font-family: 'JetBrains Mono', monospace;
@@ -95,10 +93,9 @@
 
   .update-dot {
     display: inline-block;
-    width: 6px;
-    height: 6px;
+    width: 6px; height: 6px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--gold);
     margin-right: 6px;
     animation: pulse 2s infinite;
   }
@@ -123,15 +120,13 @@
     padding: 24px;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
+    transition: transform 0.2s;
   }
 
-  .rate-card:hover {
-    transform: translateY(-2px);
-  }
+  .rate-card:hover { transform: translateY(-2px); }
 
-  .rate-card.usd { border-top: 2px solid var(--usd); }
-  .rate-card.jpy { border-top: 2px solid var(--jpy); }
+  .rate-card.usd  { border-top: 2px solid var(--usd); }
+  .rate-card.jpy  { border-top: 2px solid var(--jpy); }
   .rate-card.gold { border-top: 2px solid var(--gold); }
 
   .rate-card::after {
@@ -144,8 +139,8 @@
     filter: blur(20px);
   }
 
-  .rate-card.usd::after { background: var(--usd); }
-  .rate-card.jpy::after { background: var(--jpy); }
+  .rate-card.usd::after  { background: var(--usd); }
+  .rate-card.jpy::after  { background: var(--jpy); }
   .rate-card.gold::after { background: var(--gold); }
 
   .rate-label {
@@ -169,9 +164,9 @@
     letter-spacing: 0.05em;
   }
 
-  .usd .rate-tag { background: rgba(200,255,0,0.1); color: var(--usd); }
-  .jpy .rate-tag { background: rgba(255,107,53,0.1); color: var(--jpy); }
-  .gold .rate-tag { background: rgba(255,209,102,0.1); color: var(--gold); }
+  .usd  .rate-tag { background: rgba(200,255,0,0.1);   color: var(--usd); }
+  .jpy  .rate-tag { background: rgba(255,107,53,0.1);  color: var(--jpy); }
+  .gold .rate-tag { background: rgba(255,209,102,0.12); color: var(--gold); }
 
   .rate-sell {
     font-family: 'JetBrains Mono', monospace;
@@ -182,8 +177,8 @@
     margin-bottom: 8px;
   }
 
-  .usd .rate-sell { color: var(--usd); }
-  .jpy .rate-sell { color: var(--jpy); }
+  .usd  .rate-sell { color: var(--usd); }
+  .jpy  .rate-sell { color: var(--jpy); }
   .gold .rate-sell { color: var(--gold); }
 
   .rate-sub {
@@ -194,9 +189,7 @@
     gap: 16px;
   }
 
-  .rate-buy-label { color: var(--muted); }
-
-  /* ── 持有總覽 ── */
+  /* ── Section Title ── */
   .section-title {
     font-size: 11px;
     font-weight: 600;
@@ -216,6 +209,7 @@
     background: var(--border);
   }
 
+  /* ── 持有總覽 ── */
   .holdings-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -246,10 +240,7 @@
     margin-bottom: 8px;
   }
 
-  .holding-key {
-    font-size: 12px;
-    color: var(--muted);
-  }
+  .holding-key { font-size: 12px; color: var(--muted); }
 
   .holding-val {
     font-family: 'JetBrains Mono', monospace;
@@ -271,12 +262,13 @@
 
   .avg-label { font-size: 11px; color: var(--muted); font-family: 'Syne', sans-serif; }
 
-  /* ── 主要內容區 ── */
+  /* ── 主要內容區（圖表 2/3 + 表單 1/3）── */
   .main-grid {
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: 2fr 1fr;
     gap: 24px;
     margin-bottom: 32px;
+    align-items: start;
   }
 
   /* ── 圖表區 ── */
@@ -285,6 +277,7 @@
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 24px;
+    min-width: 0;
   }
 
   .chart-header {
@@ -317,19 +310,13 @@
     transition: all 0.2s;
   }
 
-  .chart-tab.active {
-    background: var(--surface);
-    color: var(--text);
-  }
-
-  .chart-tab.usd.active { color: var(--usd); }
-  .chart-tab.jpy.active { color: var(--jpy); }
+  .chart-tab.active { background: var(--surface); color: var(--text); }
+  .chart-tab.usd.active  { color: var(--usd); }
+  .chart-tab.jpy.active  { color: var(--jpy); }
   .chart-tab.gold.active { color: var(--gold); }
 
-  .days-tabs {
-    display: flex;
-    gap: 4px;
-  }
+  /* 2. 天數切換按鈕改成黃金配色 */
+  .days-tabs { display: flex; gap: 4px; }
 
   .days-tab {
     padding: 4px 10px;
@@ -344,9 +331,9 @@
   }
 
   .days-tab.active {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(200,255,0,0.05);
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(255,209,102,0.08);
   }
 
   .chart-wrap {
@@ -357,12 +344,34 @@
   .chart-empty {
     position: absolute;
     inset: 0;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     color: var(--muted);
     font-size: 13px;
-    display: none;
+  }
+
+  /* ── 表單收合鈕 ── */
+  .form-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 64px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--gold);
+    font-size: 14px;
+    transition: border-color 0.2s, background 0.2s;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  .form-toggle-btn:hover {
+    border-color: var(--gold);
+    background: rgba(255,209,102,0.06);
   }
 
   /* ── 換匯輸入表單 ── */
@@ -371,18 +380,19 @@
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 24px;
+    min-width: 0;
   }
 
+  /* 3. 表單標題改黃色 */
   .form-title {
     font-size: 14px;
     font-weight: 700;
     margin-bottom: 20px;
     letter-spacing: 0.02em;
+    color: var(--gold);
   }
 
-  .form-group {
-    margin-bottom: 14px;
-  }
+  .form-group { margin-bottom: 14px; }
 
   label {
     display: block;
@@ -408,13 +418,10 @@
     -webkit-appearance: none;
   }
 
-  select:focus, input:focus {
-    border-color: var(--accent);
-  }
+  /* 5. 輸入框 focus 改黃色框 */
+  select:focus, input:focus { border-color: var(--gold); }
 
-  select option {
-    background: var(--surface2);
-  }
+  select option { background: var(--surface2); }
 
   .form-row {
     display: grid;
@@ -422,11 +429,12 @@
     gap: 10px;
   }
 
+  /* 4. 記錄換匯按鈕改黃底深色文字 */
   .btn-submit {
     width: 100%;
     padding: 12px;
-    background: var(--accent);
-    color: #0a0a0f;
+    background: var(--gold);
+    color: #1a1000;
     border: none;
     border-radius: 8px;
     font-size: 13px;
@@ -438,7 +446,7 @@
     transition: opacity 0.2s, transform 0.1s;
   }
 
-  .btn-submit:hover { opacity: 0.9; }
+  .btn-submit:hover  { opacity: 0.88; }
   .btn-submit:active { transform: scale(0.98); }
 
   .form-msg {
@@ -449,7 +457,7 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
-  .form-msg.ok { color: var(--accent); }
+  .form-msg.ok  { color: var(--gold); }
   .form-msg.err { color: var(--accent2); }
 
   /* ── 換匯記錄表格 ── */
@@ -491,15 +499,14 @@
     transition: all 0.2s;
   }
 
-  .filter-tab.active {
-    background: var(--surface);
-    color: var(--text);
-  }
+  /* 7. 篩選標籤 active 配色對應各幣別 */
+  .filter-tab.active           { background: var(--surface); color: var(--text); }
+  .filter-tab.active.f-all     { color: var(--text); }
+  .filter-tab.active.f-usd     { color: var(--usd); }
+  .filter-tab.active.f-jpy     { color: var(--jpy); }
+  .filter-tab.active.f-gold    { color: var(--gold); }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
+  table { width: 100%; border-collapse: collapse; }
 
   th {
     font-size: 10px;
@@ -531,9 +538,10 @@
     letter-spacing: 0.1em;
   }
 
-  .badge-USD { background: rgba(200,255,0,0.1); color: var(--usd); }
-  .badge-JPY { background: rgba(255,107,53,0.1); color: var(--jpy); }
-  .badge-GOLD { background: rgba(255,209,102,0.1); color: var(--gold); }
+  /* 7. 記錄表格幣別標籤配色與即時牌告一致 */
+  .badge-USD  { background: rgba(200,255,0,0.1);    color: var(--usd); }
+  .badge-JPY  { background: rgba(255,107,53,0.1);   color: var(--jpy); }
+  .badge-GOLD { background: rgba(255,209,102,0.12); color: var(--gold); }
 
   .btn-del {
     background: transparent;
@@ -546,10 +554,7 @@
     transition: all 0.2s;
   }
 
-  .btn-del:hover {
-    border-color: var(--accent2);
-    color: var(--accent2);
-  }
+  .btn-del:hover { border-color: var(--accent2); color: var(--accent2); }
 
   .empty-row td {
     text-align: center;
@@ -590,15 +595,11 @@
     margin-bottom: 10px;
   }
 
-  .alert-key {
-    font-size: 12px;
-    color: var(--text);
-  }
+  .alert-key { font-size: 12px; color: var(--text); }
 
   .toggle {
     position: relative;
-    width: 36px;
-    height: 20px;
+    width: 36px; height: 20px;
     cursor: pointer;
   }
 
@@ -612,24 +613,18 @@
     transition: background 0.2s;
   }
 
-  .toggle input:checked + .toggle-track {
-    background: var(--accent);
-  }
+  .toggle input:checked + .toggle-track { background: var(--gold); }
 
   .toggle-thumb {
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 14px;
-    height: 14px;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
     background: white;
     border-radius: 50%;
     transition: transform 0.2s;
   }
 
-  .toggle input:checked ~ .toggle-thumb {
-    transform: translateX(16px);
-  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
 
   .target-input-wrap {
     margin-top: 12px;
@@ -637,17 +632,9 @@
     border-top: 1px solid var(--border);
   }
 
-  .target-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
+  .target-row { display: flex; gap: 8px; align-items: center; }
 
-  .target-row input {
-    flex: 1;
-    padding: 8px 10px;
-    font-size: 12px;
-  }
+  .target-row input { flex: 1; padding: 8px 10px; font-size: 12px; }
 
   .btn-save-target {
     padding: 8px 12px;
@@ -659,18 +646,12 @@
     font-family: 'Syne', sans-serif;
     cursor: pointer;
     white-space: nowrap;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, color 0.2s;
   }
 
-  .btn-save-target:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-save-target:hover { border-color: var(--gold); color: var(--gold); }
 
-  /* ── 響應式 ── */
-  @media (max-width: 900px) {
-    .main-grid { grid-template-columns: 1fr; }
-    .rates-grid, .holdings-grid, .alerts-grid { grid-template-columns: 1fr; }
-  }
-
-  /* ── 載入動畫 ── */
+  /* ── 骨架載入 ── */
   .skeleton {
     background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
     background-size: 200% 100%;
@@ -679,19 +660,20 @@
   }
 
   @keyframes shimmer {
-    0% { background-position: 200% 0; }
+    0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
 
-  .loading-text {
-    display: inline-block;
-    width: 80px;
-    height: 1em;
+  .loading-text { display: inline-block; width: 80px; height: 1em; }
+
+  /* ── 響應式 ── */
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .rates-grid, .holdings-grid, .alerts-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
-
 <div class="container">
 
   <!-- Header -->
@@ -714,26 +696,17 @@
     <div class="rate-card usd">
       <div class="rate-label">美元 <span class="rate-tag">USD</span></div>
       <div class="rate-sell" id="usd-sell"><span class="skeleton loading-text"></span></div>
-      <div class="rate-sub">
-        <span class="rate-buy-label">買入</span>
-        <span id="usd-buy"><span class="skeleton loading-text"></span></span>
-      </div>
+      <div class="rate-sub"><span>買入</span><span id="usd-buy"><span class="skeleton loading-text"></span></span></div>
     </div>
     <div class="rate-card jpy">
       <div class="rate-label">日圓 <span class="rate-tag">JPY</span></div>
       <div class="rate-sell" id="jpy-sell"><span class="skeleton loading-text"></span></div>
-      <div class="rate-sub">
-        <span class="rate-buy-label">買入</span>
-        <span id="jpy-buy"><span class="skeleton loading-text"></span></span>
-      </div>
+      <div class="rate-sub"><span>買入</span><span id="jpy-buy"><span class="skeleton loading-text"></span></span></div>
     </div>
     <div class="rate-card gold">
       <div class="rate-label">黃金存摺 <span class="rate-tag">GOLD</span></div>
       <div class="rate-sell" id="gold-sell"><span class="skeleton loading-text"></span></div>
-      <div class="rate-sub">
-        <span class="rate-buy-label">買入</span>
-        <span id="gold-buy"><span class="skeleton loading-text"></span></span>
-      </div>
+      <div class="rate-sub"><span>買入</span><span id="gold-buy"><span class="skeleton loading-text"></span></span></div>
     </div>
   </div>
 
@@ -745,21 +718,21 @@
     <div class="holding-card"><div class="holding-currency">GOLD</div><div style="color:var(--muted);font-size:13px;">尚無記錄</div></div>
   </div>
 
-  <!-- 圖表 + 輸入表單 -->
-  <div class="main-grid">
+  <!-- 圖表 + 表單 -->
+  <div class="main-grid" id="mainGrid">
 
     <!-- 走勢圖 -->
     <div class="chart-card">
       <div class="chart-header">
         <div class="chart-tabs">
-          <button class="chart-tab usd active" onclick="switchChart('USD', this)">USD</button>
-          <button class="chart-tab jpy" onclick="switchChart('JPY', this)">JPY</button>
-          <button class="chart-tab gold" onclick="switchChart('GOLD', this)">GOLD</button>
+          <button class="chart-tab usd active" onclick="switchChart('USD',this)">USD</button>
+          <button class="chart-tab jpy"        onclick="switchChart('JPY',this)">JPY</button>
+          <button class="chart-tab gold"       onclick="switchChart('GOLD',this)">GOLD</button>
         </div>
         <div class="days-tabs">
-          <button class="days-tab" onclick="switchDays(30, this)">30天</button>
-          <button class="days-tab active" onclick="switchDays(180, this)">180天</button>
-          <button class="days-tab" onclick="switchDays(365, this)">365天</button>
+          <button class="days-tab"        onclick="switchDays(30,this)">30天</button>
+          <button class="days-tab active" onclick="switchDays(180,this)">180天</button>
+          <button class="days-tab"        onclick="switchDays(365,this)">365天</button>
         </div>
       </div>
       <div class="chart-wrap">
@@ -768,8 +741,8 @@
       </div>
     </div>
 
-    <!-- 換匯輸入 -->
-    <div class="form-card">
+    <!-- 換匯輸入表單 -->
+    <div class="form-card" id="formCard">
       <div class="form-title">新增換匯記錄</div>
 
       <div class="form-group">
@@ -817,22 +790,16 @@
     <div class="records-header">
       <div class="section-title" style="margin:0">換匯記錄</div>
       <div class="filter-tabs">
-        <button class="filter-tab active" onclick="filterRecords('ALL', this)">全部</button>
-        <button class="filter-tab" onclick="filterRecords('USD', this)">USD</button>
-        <button class="filter-tab" onclick="filterRecords('JPY', this)">JPY</button>
-        <button class="filter-tab" onclick="filterRecords('GOLD', this)">GOLD</button>
+        <button class="filter-tab active f-all"  onclick="filterRecords('ALL',this)">全部</button>
+        <button class="filter-tab f-usd"          onclick="filterRecords('USD',this)">USD</button>
+        <button class="filter-tab f-jpy"          onclick="filterRecords('JPY',this)">JPY</button>
+        <button class="filter-tab f-gold"         onclick="filterRecords('GOLD',this)">GOLD</button>
       </div>
     </div>
     <table>
       <thead>
         <tr>
-          <th>日期</th>
-          <th>幣別</th>
-          <th>台幣</th>
-          <th>換得</th>
-          <th>匯率</th>
-          <th>備註</th>
-          <th></th>
+          <th>日期</th><th>幣別</th><th>台幣</th><th>換得</th><th>匯率</th><th>備註</th><th></th>
         </tr>
       </thead>
       <tbody id="recordsBody">
@@ -843,45 +810,38 @@
 
   <!-- 通知設定 -->
   <div class="section-title">通知設定</div>
-  <div class="alerts-grid" id="alertsGrid">
-    <!-- 由 JS 生成 -->
-  </div>
+  <div class="alerts-grid" id="alertsGrid"></div>
 
-</div><!-- /container -->
+</div>
 
 <script>
 // ── 狀態 ──────────────────────────────────────────
-let currentChart = 'USD';
-let currentDays  = 180;
+let currentChart  = 'USD';
+let currentDays   = 180;
 let currentFilter = 'ALL';
 let chartInstance = null;
-let allRecords = [];
+let allRecords    = [];
 
 // ── 初始化 ────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // 預設今天日期
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-
   loadRates();
   loadHoldings();
   loadChart(currentChart, currentDays);
   loadRecords();
   loadAlerts();
-
-  // 每 5 分鐘自動更新匯率
   setInterval(loadRates, 5 * 60 * 1000);
 });
 
 // ── 載入即時匯率 ──────────────────────────────────
 async function loadRates() {
   try {
-    const res = await fetch('/api/rates/latest');
+    const res  = await fetch('/api/rates/latest');
     const data = await res.json();
-
-    const currencies = { USD: ['usd-sell','usd-buy'], JPY: ['jpy-sell','jpy-buy'], GOLD: ['gold-sell','gold-buy'] };
+    const map  = { USD: ['usd-sell','usd-buy'], JPY: ['jpy-sell','jpy-buy'], GOLD: ['gold-sell','gold-buy'] };
     let latestTime = '—';
 
-    for (const [code, [sellId, buyId]] of Object.entries(currencies)) {
+    for (const [code, [sellId, buyId]] of Object.entries(map)) {
       if (data[code]) {
         document.getElementById(sellId).textContent = formatRate(code, data[code].sell);
         document.getElementById(buyId).textContent  = formatRate(code, data[code].buy);
@@ -891,38 +851,29 @@ async function loadRates() {
         document.getElementById(buyId).textContent  = '—';
       }
     }
-
     document.getElementById('lastUpdateTime').textContent = latestTime;
-  } catch(e) {
-    console.error('載入匯率失敗', e);
-  }
+  } catch(e) { console.error('載入匯率失敗', e); }
 }
 
 function formatRate(currency, val) {
-  if (currency === 'JPY') return val.toFixed(4);
-  if (currency === 'GOLD') return val.toLocaleString('zh-TW', {minimumFractionDigits: 0});
+  if (currency === 'JPY')  return val.toFixed(4);
+  if (currency === 'GOLD') return val.toLocaleString('zh-TW', { minimumFractionDigits: 0 });
   return val.toFixed(3);
 }
 
 // ── 載入持有總覽 ──────────────────────────────────
 async function loadHoldings() {
   try {
-    const res = await fetch('/api/holdings');
+    const res  = await fetch('/api/holdings');
     const data = await res.json();
     const grid = document.getElementById('holdingsGrid');
     grid.innerHTML = '';
 
     for (const [code, info] of Object.entries(data)) {
-      const unit = code === 'GOLD' ? 'g' : code;
-      const avgStr = info.weighted_avg_rate
-        ? formatRate(code, info.weighted_avg_rate)
-        : '—';
-      const foreignStr = info.total_foreign > 0
-        ? `${info.total_foreign.toLocaleString('zh-TW')} ${unit}`
-        : '—';
-      const twdStr = info.total_twd > 0
-        ? `NT$ ${info.total_twd.toLocaleString('zh-TW')}`
-        : '—';
+      const unit       = code === 'GOLD' ? 'g' : code;
+      const avgStr     = info.weighted_avg_rate ? formatRate(code, info.weighted_avg_rate) : '—';
+      const foreignStr = info.total_foreign > 0 ? `${info.total_foreign.toLocaleString('zh-TW')} ${unit}` : '—';
+      const twdStr     = info.total_twd > 0 ? `NT$ ${info.total_twd.toLocaleString('zh-TW')}` : '—';
 
       grid.innerHTML += `
         <div class="holding-card">
@@ -941,9 +892,7 @@ async function loadHoldings() {
           </div>
         </div>`;
     }
-  } catch(e) {
-    console.error('載入持有總覽失敗', e);
-  }
+  } catch(e) { console.error('載入持有總覽失敗', e); }
 }
 
 // ── 走勢圖 ────────────────────────────────────────
@@ -951,9 +900,8 @@ const chartColors = { USD: '#c8ff00', JPY: '#ff6b35', GOLD: '#ffd166' };
 
 async function loadChart(currency, days) {
   try {
-    const res = await fetch(`/api/rates/history/${currency}?days=${days}`);
+    const res  = await fetch(`/api/rates/history/${currency}?days=${days}`);
     const data = await res.json();
-
     const empty = document.getElementById('chartEmpty');
 
     if (!data || data.length < 2) {
@@ -970,8 +918,7 @@ async function loadChart(currency, days) {
 
     if (chartInstance) chartInstance.destroy();
 
-    const ctx = document.getElementById('rateChart').getContext('2d');
-
+    const ctx  = document.getElementById('rateChart').getContext('2d');
     const grad = ctx.createLinearGradient(0, 0, 0, 260);
     grad.addColorStop(0, color + '22');
     grad.addColorStop(1, color + '00');
@@ -982,26 +929,16 @@ async function loadChart(currency, days) {
         labels,
         datasets: [
           {
-            label: '賣出',
-            data: sells,
-            borderColor: color,
-            backgroundColor: grad,
-            borderWidth: 2,
-            pointRadius: 0,
-            pointHoverRadius: 4,
-            fill: true,
-            tension: 0.3
+            label: '賣出', data: sells,
+            borderColor: color, backgroundColor: grad,
+            borderWidth: 2, pointRadius: 0, pointHoverRadius: 4,
+            fill: true, tension: 0.3
           },
           {
-            label: '買入',
-            data: buys,
-            borderColor: color + '66',
-            backgroundColor: 'transparent',
-            borderWidth: 1.5,
-            pointRadius: 0,
-            borderDash: [4, 4],
-            fill: false,
-            tension: 0.3
+            label: '買入', data: buys,
+            borderColor: color + '66', backgroundColor: 'transparent',
+            borderWidth: 1.5, pointRadius: 0, borderDash: [4,4],
+            fill: false, tension: 0.3
           }
         ]
       },
@@ -1010,46 +947,21 @@ async function loadChart(currency, days) {
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: {
-            labels: {
-              color: '#666680',
-              font: { family: 'JetBrains Mono', size: 11 },
-              boxWidth: 16
-            }
-          },
+          legend: { labels: { color: '#666680', font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 16 } },
           tooltip: {
-            backgroundColor: '#1a1a24',
-            borderColor: '#2a2a3a',
-            borderWidth: 1,
-            titleColor: '#666680',
-            bodyColor: '#e8e8f0',
+            backgroundColor: '#1a1a24', borderColor: '#2a2a3a', borderWidth: 1,
+            titleColor: '#666680', bodyColor: '#e8e8f0',
             titleFont: { family: 'JetBrains Mono', size: 11 },
-            bodyFont: { family: 'JetBrains Mono', size: 12 }
+            bodyFont:  { family: 'JetBrains Mono', size: 12 }
           }
         },
         scales: {
-          x: {
-            grid: { color: '#2a2a3a' },
-            ticks: {
-              color: '#666680',
-              font: { family: 'JetBrains Mono', size: 10 },
-              maxTicksLimit: 8,
-              maxRotation: 0
-            }
-          },
-          y: {
-            grid: { color: '#2a2a3a' },
-            ticks: {
-              color: '#666680',
-              font: { family: 'JetBrains Mono', size: 10 }
-            }
-          }
+          x: { grid: { color: '#2a2a3a' }, ticks: { color: '#666680', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8, maxRotation: 0 } },
+          y: { grid: { color: '#2a2a3a' }, ticks: { color: '#666680', font: { family: 'JetBrains Mono', size: 10 } } }
         }
       }
     });
-  } catch(e) {
-    console.error('載入圖表失敗', e);
-  }
+  } catch(e) { console.error('載入圖表失敗', e); }
 }
 
 function switchChart(currency, btn) {
@@ -1067,15 +979,12 @@ function switchDays(days, btn) {
 }
 
 // ── 換匯記錄 ──────────────────────────────────────
-async function loadRecords(currency = null) {
+async function loadRecords() {
   try {
-    const url = currency ? `/api/records?currency=${currency}` : '/api/records';
-    const res = await fetch(url);
+    const res = await fetch('/api/records');
     allRecords = await res.json();
     renderRecords(allRecords);
-  } catch(e) {
-    console.error('載入記錄失敗', e);
-  }
+  } catch(e) { console.error('載入記錄失敗', e); }
 }
 
 function renderRecords(records) {
@@ -1084,30 +993,23 @@ function renderRecords(records) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="7">尚無換匯記錄</td></tr>';
     return;
   }
-
   tbody.innerHTML = records.map(r => `
     <tr>
       <td>${r.exchanged_at}</td>
       <td><span class="currency-badge badge-${r.currency}">${r.currency}</span></td>
       <td>NT$ ${r.twd_amount.toLocaleString('zh-TW')}</td>
-      <td>${r.foreign_amount.toLocaleString('zh-TW', {maximumFractionDigits: 4})}</td>
+      <td>${r.foreign_amount.toLocaleString('zh-TW', { maximumFractionDigits: 4 })}</td>
       <td>${r.rate_used}</td>
       <td style="color:var(--muted)">${r.note || '—'}</td>
       <td><button class="btn-del" onclick="deleteRecord(${r.id})">刪除</button></td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
 function filterRecords(currency, btn) {
   currentFilter = currency;
   document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-
-  if (currency === 'ALL') {
-    renderRecords(allRecords);
-  } else {
-    renderRecords(allRecords.filter(r => r.currency === currency));
-  }
+  renderRecords(currency === 'ALL' ? allRecords : allRecords.filter(r => r.currency === currency));
 }
 
 async function deleteRecord(id) {
@@ -1116,20 +1018,18 @@ async function deleteRecord(id) {
     await fetch(`/api/records/${id}`, { method: 'DELETE' });
     await loadRecords();
     await loadHoldings();
-  } catch(e) {
-    console.error('刪除失敗', e);
-  }
+  } catch(e) { console.error('刪除失敗', e); }
 }
 
 // ── 新增換匯記錄 ──────────────────────────────────
 async function submitRecord() {
-  const msg = document.getElementById('formMsg');
+  const msg     = document.getElementById('formMsg');
   const currency = document.getElementById('f-currency').value;
-  const twd      = parseFloat(document.getElementById('f-twd').value);
-  const foreign  = parseFloat(document.getElementById('f-foreign').value);
-  const rate     = parseFloat(document.getElementById('f-rate').value);
-  const date     = document.getElementById('f-date').value;
-  const note     = document.getElementById('f-note').value;
+  const twd     = parseFloat(document.getElementById('f-twd').value);
+  const foreign = parseFloat(document.getElementById('f-foreign').value);
+  const rate    = parseFloat(document.getElementById('f-rate').value);
+  const date    = document.getElementById('f-date').value;
+  const note    = document.getElementById('f-note').value;
 
   if (!twd || !foreign || !rate || !date) {
     msg.className = 'form-msg err';
@@ -1141,19 +1041,13 @@ async function submitRecord() {
     const res = await fetch('/api/records', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        currency, twd_amount: twd, foreign_amount: foreign,
-        rate_used: rate, exchanged_at: date, note
-      })
+      body: JSON.stringify({ currency, twd_amount: twd, foreign_amount: foreign, rate_used: rate, exchanged_at: date, note })
     });
 
     if (res.ok) {
       msg.className = 'form-msg ok';
       msg.textContent = '✓ 記錄已儲存';
-      document.getElementById('f-twd').value = '';
-      document.getElementById('f-foreign').value = '';
-      document.getElementById('f-rate').value = '';
-      document.getElementById('f-note').value = '';
+      ['f-twd','f-foreign','f-rate','f-note'].forEach(id => document.getElementById(id).value = '');
       await loadRecords();
       await loadHoldings();
       setTimeout(() => msg.textContent = '', 3000);
@@ -1173,59 +1067,44 @@ async function loadAlerts() {
   const grid = document.getElementById('alertsGrid');
   grid.innerHTML = '';
 
-  for (const currency of ['USD', 'JPY', 'GOLD']) {
+  for (const currency of ['USD','JPY','GOLD']) {
     try {
       const res = await fetch(`/api/alerts/${currency}`);
-      const s = await res.json();
+      const s   = await res.json();
 
       grid.innerHTML += `
         <div class="alert-card">
           <div class="alert-currency">${currency} 通知設定</div>
-
           <div class="alert-row">
             <span class="alert-key">3 個月低點</span>
             <label class="toggle">
-              <input type="checkbox" ${s.alert_3m_low ? 'checked' : ''}
-                onchange="updateAlert('${currency}', 'alert_3m_low', this.checked)">
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
+              <input type="checkbox" ${s.alert_3m_low ? 'checked' : ''} onchange="updateAlert('${currency}','alert_3m_low',this.checked)">
+              <div class="toggle-track"></div><div class="toggle-thumb"></div>
             </label>
           </div>
-
           <div class="alert-row">
             <span class="alert-key">半年低點</span>
             <label class="toggle">
-              <input type="checkbox" ${s.alert_6m_low ? 'checked' : ''}
-                onchange="updateAlert('${currency}', 'alert_6m_low', this.checked)">
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
+              <input type="checkbox" ${s.alert_6m_low ? 'checked' : ''} onchange="updateAlert('${currency}','alert_6m_low',this.checked)">
+              <div class="toggle-track"></div><div class="toggle-thumb"></div>
             </label>
           </div>
-
           <div class="alert-row">
             <span class="alert-key">低於加權平均</span>
             <label class="toggle">
-              <input type="checkbox" ${s.alert_below_avg ? 'checked' : ''}
-                onchange="updateAlert('${currency}', 'alert_below_avg', this.checked)">
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
+              <input type="checkbox" ${s.alert_below_avg ? 'checked' : ''} onchange="updateAlert('${currency}','alert_below_avg',this.checked)">
+              <div class="toggle-track"></div><div class="toggle-thumb"></div>
             </label>
           </div>
-
           <div class="target-input-wrap">
             <label>目標匯率</label>
             <div class="target-row">
-              <input type="number" id="target-${currency}"
-                value="${s.target_rate || ''}"
-                placeholder="未設定" step="0.0001" min="0">
-              <button class="btn-save-target"
-                onclick="saveTarget('${currency}')">儲存</button>
+              <input type="number" id="target-${currency}" value="${s.target_rate || ''}" placeholder="未設定" step="0.0001" min="0">
+              <button class="btn-save-target" onclick="saveTarget('${currency}')">儲存</button>
             </div>
           </div>
         </div>`;
-    } catch(e) {
-      console.error(`載入 ${currency} 通知設定失敗`, e);
-    }
+    } catch(e) { console.error(`載入 ${currency} 通知設定失敗`, e); }
   }
 }
 
