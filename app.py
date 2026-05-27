@@ -5,7 +5,7 @@ Flask 主應用程式。
 - 啟動 APScheduler 定時抓取匯率並觸發通知
 """
 from datetime import datetime
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from config import config
@@ -257,7 +257,7 @@ def api_update_alert(currency: str):
 
 @app.route("/")
 def index():
-    return "<h2>Exchange Tracker is running ✅</h2><p>Dashboard 開發中</p>"
+    return render_template("index.html")
 
 
 if __name__ == "__main__":
