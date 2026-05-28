@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: exchange-tracker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///exchange_tracker.db
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_USER_ID
+        sync: false
+      - key: EMAIL_ENABLED
+        value: "false"
+      - key: FETCH_INTERVAL_MINUTES
+        value: "60"
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: "false"
