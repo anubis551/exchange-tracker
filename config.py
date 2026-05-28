@@ -32,6 +32,7 @@ class Config:
 
     # ── 追蹤標的 ─────────────────────────────────────
     TRACKED_CURRENCIES = ["USD", "JPY", "GOLD"]
+    TRACKED_STOCKS = ["VOO", "0050.TW", "00919.TW"]
 
     # ── 觸發條件閾值 ──────────────────────────────────
     ALERT_THRESHOLD_PERCENT: float = 1.0
