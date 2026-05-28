@@ -1,8 +1,13 @@
 flask==3.0.3
 sqlalchemy==2.0.30
-requests==2.32.3
+requests>=2.31.0
 beautifulsoup4==4.12.3
 python-dotenv==1.0.1
 apscheduler==3.10.4
 line-bot-sdk==3.11.0
+yfinance==0.2.40
+pandas==2.2.2
+lightgbm==4.3.0
+xgboost==2.0.3
+scikit-learn==1.5.0
 gunicorn
